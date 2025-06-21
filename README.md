@@ -170,65 +170,58 @@ Contributions are welcome! If you'd like to add features, fix bugs, or improve d
 
 ```mermaid
 graph TD
-    A[User Executes media_downloader_tool.py with Args] --> B{Parse CLI Arguments};
-    B --> C{Load Queries (Direct or from File)};
-    C --> D[Loop Through Each Query];
-    D --> E{Interactive Mode?};
-    E -- Yes --> F[Fetch Media List from Platforms];
-    F --> G[Display Found Items to User];
-    G --> H[User Selects Items];
-    H --> I[Download Selected Items];
-    I --> J[Save to Output Directory];
-    J --> K[Next Query or End];
-    E -- No --> L[Call Direct Search & Download Functions for Platforms];
-    L --> M[Download Items Directly];
-    M --> J;
-    D -- No More Queries --> K;
+    A[User Executes Script] --> B{Parse CLI Arguments}
+    B --> C{Load Queries}
+    C --> D[Loop Through Queries]
+    D --> E{Interactive Mode?}
+    E -- Yes --> F[Fetch Media List]
+    F --> G[Display Items]
+    G --> H[User Selects Items]
+    H --> I[Download Selected]
+    I --> J[Save to Output]
+    J --> K[Next Query/End]
+    E -- No --> L[Direct Search & Download]
+    L --> M[Download Items]
+    M --> J
+    D --> K
 ```
 
 ### Web Interface Workflow (Flask App)
 
 ```mermaid
 graph TD
-    subgraph User Browser
-        U1[User Navigates to / URL]
-        U2[User Submits Search Form to /search]
-        U3[User Clicks Download Button on /results]
+    subgraph User_Browser["User Browser"]
+        U1[Visit /]
+        U2[Submit Search Form]
+        U3[Click Download Button]
     end
 
-    subgraph Flask Server (app.py)
-        S1[Route: / - Renders index.html]
-        S2[Route: /search - Handles Form]
-        S3[Route: /download - Handles Download Request]
-
-        S2A[Call list_X_media for selected platforms]
-        S2B[Render results.html with found items]
-
-        S3A[Call download_selected_item utility]
-        S3B[File saved to server's download folder]
-        S3C[Serve file using send_from_directory]
+    subgraph Flask_Server["Flask Server (app.py)"]
+        S1[Route: / - Render index.html]
+        S2[Route: /search - Handle Form]
+        S3[Route: /download - Handle Download]
+        
+        S2 --> S2A[Call list_X_media]
+        S2A --> S2B[Render results.html]
+        S3 --> S3A[Call download_selected_item]
+        S3A --> S3B[Save File]
+        S3B --> S3C[Serve File]
     end
 
-    subgraph Downloader Modules
+    subgraph Downloader_Modules["Downloader Modules"]
         DM1[list_X_media functions]
         DM2[download_file utilities]
     end
 
-    U1 --> S1;
-    U2 --> S2;
-    S2 --> S2A;
-    S2A --> DM1;
-    DM1 --> S2A;
-    S2A --> S2B;
-    S2B --> U2_Results_PageDisplayed;
-
-    U2_Results_PageDisplayed -- User clicks download --> U3;
-    U3 --> S3;
-    S3 --> S3A;
-    S3A --> DM2;
-    DM2 --> S3B;
-    S3B --> S3C;
-    S3C --> U3_File_Downloaded;
+    U1 --> S1
+    U2 --> S2
+    S2A --> DM1
+    DM1 --> S2A
+    S2B --> U3
+    U3 --> S3
+    S3A --> DM2
+    DM2 --> S3B
+    S3C --> U3_File[File Downloaded]
 ```
 
 *(Diagrams are rendered by GitHub when viewing the README.md file.)*
