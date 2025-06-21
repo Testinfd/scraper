@@ -164,4 +164,107 @@ Downloaded media will be saved in the following structure:
 
 Contributions are welcome! If you'd like to add features, fix bugs, or improve documentation, please feel free to fork the repository and submit a pull request.
 
-*(Diagrams are not easily representable in this text-based README. A visual workflow could be: User Input -> Main Tool -> Platform Lister -> User Selection (if interactive) -> Platform Downloader -> Files Saved)*
+## Workflow Diagrams
+
+### CLI Tool Workflow
+
+```mermaid
+graph TD
+    A[User Executes media_downloader_tool.py with Args] --> B{Parse CLI Arguments};
+    B --> C{Load Queries (Direct or from File)};
+    C --> D[Loop Through Each Query];
+    D --> E{Interactive Mode?};
+    E -- Yes --> F[Fetch Media List from Platforms];
+    F --> G[Display Found Items to User];
+    G --> H[User Selects Items];
+    H --> I[Download Selected Items];
+    I --> J[Save to Output Directory];
+    J --> K[Next Query or End];
+    E -- No --> L[Call Direct Search & Download Functions for Platforms];
+    L --> M[Download Items Directly];
+    M --> J;
+    D -- No More Queries --> K;
+```
+
+### Web Interface Workflow (Flask App)
+
+```mermaid
+graph TD
+    subgraph User Browser
+        U1[User Navigates to / URL]
+        U2[User Submits Search Form to /search]
+        U3[User Clicks Download Button on /results]
+    end
+
+    subgraph Flask Server (app.py)
+        S1[Route: / - Renders index.html]
+        S2[Route: /search - Handles Form]
+        S3[Route: /download - Handles Download Request]
+
+        S2A[Call list_X_media for selected platforms]
+        S2B[Render results.html with found items]
+
+        S3A[Call download_selected_item utility]
+        S3B[File saved to server's download folder]
+        S3C[Serve file using send_from_directory]
+    end
+
+    subgraph Downloader Modules
+        DM1[list_X_media functions]
+        DM2[download_file utilities]
+    end
+
+    U1 --> S1;
+    U2 --> S2;
+    S2 --> S2A;
+    S2A --> DM1;
+    DM1 --> S2A;
+    S2A --> S2B;
+    S2B --> U2_Results_PageDisplayed;
+
+    U2_Results_PageDisplayed -- User clicks download --> U3;
+    U3 --> S3;
+    S3 --> S3A;
+    S3A --> DM2;
+    DM2 --> S3B;
+    S3B --> S3C;
+    S3C --> U3_File_Downloaded;
+```
+
+*(Diagrams are rendered by GitHub when viewing the README.md file.)*
+
+## Web Interface Deployment
+
+The provided web interface is a Flask (Python) application. Here are some important considerations for deployment:
+
+*   **GitHub Pages Limitation**: GitHub Pages is designed for hosting **static websites** (HTML, CSS, JavaScript files). It cannot directly run Python backend code like a Flask application. Therefore, the Flask web interface in this project cannot be deployed directly to GitHub Pages.
+
+*   **Suitable Hosting Platforms for Flask Apps**: To deploy the Flask web interface, you will need a hosting platform that supports Python web applications. Some popular options include:
+    *   **PaaS (Platform as a Service)**:
+        *   **Heroku**: Offers a free tier and is relatively easy to deploy Python/Flask apps.
+        *   **PythonAnywhere**: Specifically designed for Python, also has a free tier for small projects.
+        *   **Google App Engine**: Part of Google Cloud, scalable.
+        *   **AWS Elastic Beanstalk**: Part of Amazon Web Services, highly scalable.
+        *   **Microsoft Azure App Service**: Part of Microsoft Azure.
+    *   **VPS (Virtual Private Server)**:
+        *   Services like DigitalOcean, Linode, Vultr allow you to rent a virtual server where you can set up a Python environment, a web server (like Gunicorn or Waitress), and run your Flask app. This offers more control but requires more setup.
+    *   **Containers**:
+        *   You can containerize the Flask application using **Docker** and then deploy the container to services like AWS ECS, Google Kubernetes Engine (GKE), or Docker Hub with a cloud provider.
+
+*   **General Deployment Steps (Conceptual)**:
+    1.  **Prepare your app for production**:
+        *   Use a production-grade WSGI server (e.g., Gunicorn, Waitress) instead of Flask's built-in development server (`app.run(debug=True)`).
+        *   Set `DEBUG = False` in a production environment.
+        *   Manage secret keys securely.
+    2.  **Dependencies**: Ensure all dependencies are listed in a `requirements.txt` file (`pip freeze > requirements.txt`).
+    3.  **Choose a hosting provider** from the options above (or others).
+    4.  **Follow the provider's deployment guide**: Each platform will have specific instructions for deploying Python/Flask applications. This often involves:
+        *   Pushing your code to a Git repository linked to the service (e.g., Heroku).
+        *   Configuring environment variables (like API keys, if not hardcoded for personal use).
+        *   Setting up a `Procfile` (common for Heroku, specifying how to run your app).
+
+*   **Considerations for this Specific App**:
+    *   **File Downloads**: The current web app saves downloaded media to the server's local filesystem (`instance/downloads`) and then serves them. Ensure your hosting solution provides persistent storage if you want these downloads to remain across deployments or server restarts. For ephemeral storage, this is fine, but files will be lost.
+    *   **API Keys**: If deploying publicly, avoid committing API keys directly into your repository. Use environment variables provided by the hosting platform. (For this project, the Giphy API key is in `giphy_downloader.py`, which is not ideal for a public repo if it contains a real key).
+
+This project's web interface is primarily intended for local use or deployment in a trusted environment due to its direct handling of file system operations and API keys.
