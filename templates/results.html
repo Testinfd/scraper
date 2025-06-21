@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Results for "{{ query }}"</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; }
+        .result-item {
+            border: 1px solid #ddd; border-radius: 4px; padding: 15px; margin-bottom: 15px;
+            background-color: #f9f9f9;
+        }
+        .result-item h3 { margin-top: 0; }
+        .result-item p { margin: 5px 0; }
+        .result-item img, .result-item video, .result-item audio { max-width: 300px; max-height: 200px; display: block; margin-top: 10px; border-radius: 4px;}
+        .download-form button {
+            background-color: #28a745; color: white; padding: 8px 12px; border: none;
+            border-radius: 4px; cursor: pointer; font-size: 14px; margin-top:10px;
+        }
+        .download-form button:hover { background-color: #218838; }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .no-results { font-style: italic; color: #777;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Search Results for "{{ query }}"</h1>
+        <p><a href="{{ url_for('index') }}">New Search</a></p>
+
+        {% if results %}
+            <h2>Found {{ results|length }} items (displaying up to {{ limit_per_platform }} per platform):</h2>
+            {% for item in results %}
+            <div class="result-item">
+                <h3>{{ item.title }}</h3>
+                <p><strong>Platform:</strong> {{ item.platform.title() }}</p>
+                <p><strong>Type:</strong> {{ item.type }}</p>
+                <p><strong>Source URL:</strong> <a href="{{ item.url }}" target="_blank">Link</a></p>
+                <p><strong>Suggested Filename:</strong> {{ item.filename }}</p>
+
+                {% if item.type == 'image' or item.type == 'gif' or item.type == 'sticker' %}
+                    <img src="{{ item.url }}" alt="{{ item.title }}">
+                {% elif item.type == 'video' %}
+                    <video controls width="300">
+                        <source src="{{ item.url }}" type="video/mp4"> <!-- Common case, might need more specific type based on item.filename extension -->
+                        Your browser does not support the video tag.
+                    </video>
+                {% elif item.type == 'audio' %}
+                     <audio controls>
+                        <source src="{{ item.url }}" type="audio/mpeg"> <!-- Common case -->
+                        Your browser does not support the audio element.
+                    </audio>
+                {% endif %}
+
+                <form class="download-form" action="{{ url_for('download') }}" method="POST" target="_blank">
+                    <input type="hidden" name="url" value="{{ item.url }}">
+                    <input type="hidden" name="filename" value="{{ item.filename }}">
+                    <input type="hidden" name="platform" value="{{ item.platform }}">
+                    <input type="hidden" name="title" value="{{ item.title }}">
+                    <input type="hidden" name="type" value="{{ item.type }}">
+                    <input type="hidden" name="query_context_dir" value="{{ safe_query_name }}">
+                    <button type="submit">Download this item</button>
+                </form>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="no-results">No media items found for your query "{{ query }}" with the selected criteria.</p>
+        {% endif %}
+
+        <p><a href="{{ url_for('index') }}">New Search</a></p>
+    </div>
+</body>
+</html>
