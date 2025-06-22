@@ -20,6 +20,7 @@ from wikimedia_scraper import list_wikimedia_media, DEFAULT_DOWNLOAD_TIMEOUT as 
 from pixabay_scraper import list_pixabay_videos, PIXABAY_API_KEY, DEFAULT_DOWNLOAD_TIMEOUT as PIXABAY_TIMEOUT
 from frinkiac_scraper import list_frinkiac_media, DEFAULT_DOWNLOAD_TIMEOUT as FRINKIAC_TIMEOUT
 from mixkit_scraper import list_mixkit_videos, DEFAULT_DOWNLOAD_TIMEOUT as MIXKIT_TIMEOUT
+from wikimedia_oauth_scraper import list_wikimedia_oauth_media, DEFAULT_DOWNLOAD_TIMEOUT as WIKIMEDIA_OAUTH_TIMEOUT
 # from comb_io_scraper import list_comb_io_media # If it becomes available
 
 app = Flask(__name__)
@@ -39,6 +40,7 @@ def get_platform_default_timeout(platform):
     if platform == "giphy": return GIPHY_TIMEOUT
     if platform == "morbotron": return MORBOTRON_TIMEOUT
     if platform == "wikimedia": return WIKIMEDIA_TIMEOUT
+    if platform == "wikimedia_oauth": return WIKIMEDIA_OAUTH_TIMEOUT
     if platform == "pixabay": return PIXABAY_TIMEOUT
     if platform == "frinkiac": return FRINKIAC_TIMEOUT
     if platform == "mixkit": return MIXKIT_TIMEOUT
@@ -92,6 +94,8 @@ def search():
                 platform_results = list_morbotron_media(query, limit_per_platform * 2, mt, api_call_timeout)
         elif platform == 'wikimedia':
             platform_results = list_wikimedia_media(query, limit_per_platform * 2, media_type, api_call_timeout)
+        elif platform == 'wikimedia_oauth':
+            platform_results = list_wikimedia_oauth_media(query, limit_per_platform * 2, media_type, api_call_timeout)
         elif platform == 'pixabay':
             if PIXABAY_API_KEY != "YOUR_PIXABAY_API_KEY_HERE":
                 if media_type == "all" or media_type == "video":

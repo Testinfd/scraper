@@ -8,13 +8,14 @@ This tool helps you search for and download media (like images, GIFs, and videos
 
 You can fetch media from:
 
-*   **Giphy**: For GIFs, Stickers, and short Videos.
-*   **Morbotron**: For screencaps from shows like The Simpsons and Futurama.
-*   **Wikimedia Commons**: For a vast collection of images, videos, and audio.
-*   **Pixabay**: For free stock videos.
-*   **Frinkiac**: For The Simpsons screencaps searchable by quote.
-*   **Mixkit**: For stock videos.
-*   *(Comb.io is currently under maintenance for this tool).*
+*   **Giphy**: For GIFs, Stickers, and short Videos. (Working)
+*   **Morbotron**: For screencaps from shows like The Simpsons and Futurama. (Working)
+*   **Wikimedia Commons (Public API)**: `wikimedia` - For a vast collection of images, videos, and audio using public APIs. (Working)
+*   **Wikimedia Commons (OAuth API)**: `wikimedia_oauth` - Same as above, but uses an OAuth token (provided in the code) which might offer higher rate limits. (Working, requires valid token)
+*   **Pixabay**: For free stock videos. (Working, requires user API key)
+*   **Frinkiac**: For The Simpsons screencaps searchable by quote. (*Currently not functional due to website changes.*)
+*   **Mixkit**: For stock videos. (*Currently not functional due to website blocking.*)
+*   *(Comb.io scraper is currently disabled).*
 
 ## Key Features
 
@@ -86,7 +87,10 @@ Follow these steps to get the tool running on your computer.
         *   **Set this key as an environment variable named `PIXABAY_API_KEY`**.
             *   Follow the same method as for the Giphy key (e.g., `export PIXABAY_API_KEY="YOUR_KEY"`).
         *   Pixabay search will not work without this.
-    *   **Other Services (Frinkiac, Morbotron, Mixkit, Wikimedia):** These currently use web scraping or public APIs that don't require a personal key setup from your side.
+    *   **Wikimedia OAuth Token**:
+        *   The `wikimedia_oauth_scraper.py` module uses a pre-configured OAuth 2.0 Bearer token for authenticated API access. The token is currently hardcoded in the script.
+        *   This token will eventually expire. For long-term use, this mechanism would need to be updated (e.g., to use environment variables or a configuration file for the token, and implement token refresh logic if using Client ID/Secret).
+    *   **Other Services (Morbotron, Wikimedia Public, Frinkiac, Mixkit):** These use public APIs or web scraping that don't require personal key setup from your side. Note that Frinkiac and Mixkit scrapers are currently non-functional.
 
 5.  **File List (for reference):**
     *   `media_downloader_tool.py`: The main command-line script.
@@ -94,11 +98,12 @@ Follow these steps to get the tool running on your computer.
     *   `templates/`: Folder containing HTML for the web app (`index.html`, `results.html`).
     *   `giphy_downloader.py`: Handles Giphy.
     *   `morbotron_scraper.py`: Handles Morbotron.
-    *   `wikimedia_scraper.py`: Handles Wikimedia Commons.
+    *   `wikimedia_scraper.py`: Handles Wikimedia Commons (public API).
+    *   `wikimedia_oauth_scraper.py`: Handles Wikimedia Commons (OAuth2 authenticated API).
     *   `pixabay_scraper.py`: Handles Pixabay.
-    *   `frinkiac_scraper.py`: Handles Frinkiac.
-    *   `mixkit_scraper.py`: Handles Mixkit.
-    *   `comb_io_scraper.py`: (Currently not fully functional).
+    *   `frinkiac_scraper.py`: Handles Frinkiac (currently non-functional).
+    *   `mixkit_scraper.py`: Handles Mixkit (currently non-functional).
+    *   `comb_io_scraper.py`: (Currently disabled).
     *   `requirements.txt`: Lists Python libraries needed.
 
 ## How to Use
@@ -118,8 +123,8 @@ python media_downloader_tool.py "your search query" --platforms <platform1> <pla
 
 *   `queries` (required unless `--query_file` is used): The search term(s). If a term has spaces, put it in quotes (e.g., `"funny cat"`). You can list multiple queries.
 *   `--platforms <platform_names...>` (required): Which sites to search.
-    *   Choices: `giphy`, `morbotron`, `wikimedia`, `pixabay`, `frinkiac`, `mixkit`
-    *   Example: `--platforms giphy wikimedia`
+    *   Choices: `giphy`, `morbotron`, `wikimedia`, `wikimedia_oauth`, `pixabay`, `frinkiac`, `mixkit`
+    *   Example: `--platforms giphy wikimedia_oauth`
 *   `--query_file <filepath>`: Path to a text file with one search query per line.
     *   Example: `--query_file my_searches.txt`
 *   `--limit <number>`: Max items to download per query/platform. Default: `5`.
@@ -196,7 +201,10 @@ When using the command-line tool, downloaded media is saved like this:
 ## Troubleshooting & Notes
 
 *   **No Giphy/Pixabay results?** Double-check your `GIPHY_API_KEY` and `PIXABAY_API_KEY` environment variables are correctly set and that the keys themselves are valid.
-*   **Web Scraping**: Services like Frinkiac, Morbotron, and Mixkit are accessed by web scraping. If these sites change their structure, the tool might stop working for them until it's updated.
+*   **Wikimedia OAuth Token:** The `wikimedia_oauth` scraper uses a hardcoded token. If it stops working, this token may have expired.
+*   **Web Scraping (Frinkiac, Mixkit, Morbotron):**
+    *   Morbotron currently uses web scraping and is functional.
+    *   Frinkiac and Mixkit also use web scraping but are **currently not functional** due to website changes or anti-scraping measures. Their success depends on the target websites' structures not changing significantly.
 *   **Timeouts**: If you're on a slow connection, you might need to increase `--download_timeout` or `--api_call_timeout`.
 *   **Flask Web App is for Local Use**: The `app.py` web interface is mainly for running on your own computer. Deploying it to a public web server requires additional steps and security considerations.
 
