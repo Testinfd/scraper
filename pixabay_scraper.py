@@ -4,8 +4,8 @@ import argparse
 import json
 
 PIXABAY_API_URL = "https://pixabay.com/api/videos/"
-# IMPORTANT: Replace with your Pixabay API Key
-PIXABAY_API_KEY = "YOUR_PIXABAY_API_KEY_HERE"
+# Attempt to get API key from environment variable, otherwise use placeholder
+PIXABAY_API_KEY = os.environ.get("PIXABAY_API_KEY", "YOUR_PIXABAY_API_KEY_HERE")
 DEFAULT_DOWNLOAD_TIMEOUT = 15  # seconds
 
 def download_file(url, folder_name, file_name, timeout=DEFAULT_DOWNLOAD_TIMEOUT):
@@ -107,7 +107,8 @@ def list_pixabay_videos(query, list_limit=25, api_timeout=10, **kwargs):
             "type": "video", # Pixabay video endpoint returns videos
             "filename": final_filename,
             "platform": "pixabay",
-            "preview_image_url": hit.get("picture_id") # This is just an ID, not full URL. Actual preview: `https://i.vimeocdn.com/video/{picture_id}_295x166.jpg` but this is for Vimeo.
+            # The following complex comment block was causing a syntax error and the key was redefined.
+            # "preview_image_url": hit.get("picture_id") # This is just an ID, not full URL. Actual preview: `https://i.vimeocdn.com/video/{picture_id}_295x166.jpg` but this is for Vimeo.
                                                      # Pixabay API gives direct preview image in `userImageURL` for user, or `webformatURL` for image search.
                                                      # For videos, the preview is often part of the video player, not a direct image URL in API.
                                                      # The video object itself contains `picture_id`.
@@ -116,9 +117,7 @@ def list_pixabay_videos(query, list_limit=25, api_timeout=10, **kwargs):
                                                      # Pixabay's own site uses a URL like: https://cdn.pixabay.com/vimeo/{VIMEO_VIDEO_ID_from_page_url}/?Expires=...&Key-Pair-Id=...&Signature=...
                                                      # The API provides `picture_id` which seems to be a vimeo thumbnail id.
                                                      # Example: "picture_id": "7110920_1920" -> https://i.vimeocdn.com/video/7110920_1920.jpg (this structure might work)
-            "preview_image_url": f"https://i.vimeocdn.com/video/{hit.get('picture_id')}.jpg" if hit.get('picture_id') else None,
-
-
+            "preview_image_url": f"https://i.vimeocdn.com/video/{hit.get('picture_id')}.jpg" if hit.get('picture_id') else None
         })
     return {"items": found_items, "error": None, "status_message": None if found_items else f"Pixabay: No items extracted after processing hits for '{query[:50]}'"}
 
@@ -127,16 +126,25 @@ def search_pixabay_videos(query, limit=5, output_dir="pixabay_media", api_timeou
     Searches Pixabay for videos and downloads them.
     """
     listed_items_data = list_pixabay_videos(query, list_limit=limit, api_timeout=api_timeout)
-    listed_items = listed_items_data.get("items", [])
 
-    if listed_items_data.get("error"):
-        print(listed_items_data["error"])
-    elif not listed_items and listed_items_data.get("status_message"):
-        print(listed_items_data["status_message"])
-    elif not listed_items and not listed_items_data.get("error"):
-        print(f"Pixabay: No videos found or extracted for query '{query}'.")
+    if isinstance(listed_items_data, dict): # Check if it's a dict (success or error dict)
+        listed_items = listed_items_data.get("items", [])
+        if listed_items_data.get("error"):
+            print(listed_items_data["error"])
+        elif not listed_items and listed_items_data.get("status_message"):
+            print(listed_items_data["status_message"])
+        elif not listed_items and not listed_items_data.get("error"): # This case might be redundant if status_message always covers no items
+            print(f"Pixabay: No videos found or extracted for query '{query}'.")
+    elif isinstance(listed_items_data, list) and not listed_items_data: # It's an empty list (API key issue from list_pixabay_videos)
+        listed_items = []
+        # The message "Pixabay API key is not set..." is already printed by list_pixabay_videos.
+        # Adding a specific message for search_pixabay_videos context.
+        print(f"Pixabay: Skipping download for '{query}' as no items were listed (check API key or query).")
+    else: # Unexpected return type or structure
+        listed_items = []
+        print(f"Pixabay: Unexpected data structure from list_pixabay_videos for query '{query}'. Cannot process.")
 
-    if not listed_items:
+    if not listed_items: # This condition is met if API key is missing, or no items found, or error.
         return []
 
     downloaded_files = []

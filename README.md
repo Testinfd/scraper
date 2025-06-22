@@ -1,303 +1,209 @@
 # Unified Media Downloader Tool
 
-## Overview
+## What is this?
 
-This Python-based command-line tool allows you to search for and download media (images, GIFs, videos, audio) from various online platforms. It supports searching multiple platforms simultaneously, multiple keywords, filtering by media type, and offers both direct download and an interactive mode to select specific files.
+This tool helps you search for and download media (like images, GIFs, and videos) from various online sources using a command-line interface (CLI) or a simple web page. Think of it as a personal assistant for finding and saving media for your projects or collection!
 
-## Features
+## Supported Sources
 
-*   **Multiple Platform Support**:
-    *   Giphy (GIFs, Stickers, short Videos)
-    *   Morbotron (TV Show Screencaps - e.g., The Simpsons, Futurama)
-    *   Wikimedia Commons (Images, Videos, Audio)
-    *   Pixabay (Videos)
-    *   Frinkiac (The Simpsons Screencaps by Quote)
-    *   Mixkit (Stock Videos)
-    *   (Potentially Comb.io - currently facing API issues)
-*   **Multiple Keyword Search**:
-    *   Provide multiple search queries directly on the command line.
-    *   Supply a text file containing a list of queries.
-*   **Smart Filenaming**: Downloaded files are named using the query terms and original media identifiers for easy recognition.
-*   **Media Type Filtering**: Specify the type of media you're looking for (e.g., `image`, `gif`, `video`, `audio`, `sticker`, or `all`).
-*   **Interactive Mode**: List all found media items and choose interactively which ones to download.
-*   **Organized Output**: Media is saved into a structured directory: `base_output_dir/query_term/platform_name/file.ext`.
-*   **Configurable Timeouts**: Set timeouts for API calls and individual file downloads.
-*   **Limit Control**: Specify the maximum number of items to download per query/platform.
+You can fetch media from:
 
-## Prerequisites
+*   **Giphy**: For GIFs, Stickers, and short Videos.
+*   **Morbotron**: For screencaps from shows like The Simpsons and Futurama.
+*   **Wikimedia Commons**: For a vast collection of images, videos, and audio.
+*   **Pixabay**: For free stock videos.
+*   **Frinkiac**: For The Simpsons screencaps searchable by quote.
+*   **Mixkit**: For stock videos.
+*   *(Comb.io is currently under maintenance for this tool).*
 
-*   Python 3.7+
-*   `requests` library: Install it using pip:
-    ```bash
-    pip install requests
-    ```
+## Key Features
 
-## Setup
+*   **One Tool, Many Sources**: Search Giphy, Morbotron, Wikimedia, etc., all at once.
+*   **Command-Line Power**: Use it from your terminal for scripting and automation.
+*   **Simple Web Interface**: Prefer clicking buttons? There's a basic web page for that too.
+*   **Search Your Way**: Use multiple keywords or even a list of queries from a file.
+*   **Filter by Type**: Look specifically for `image`, `gif`, `video`, `audio`, or `sticker`.
+*   **Choose What You Download**: An interactive mode lets you preview and select items before downloading.
+*   **Organized Downloads**: Files are saved neatly into folders based on your search and the source.
+*   **Safe Filenames**: Downloaded files get sensible names.
 
-1.  **Clone the repository (if applicable) or download the script files.**
-    *   `media_downloader_tool.py` (main script)
-    *   `app.py` (for the web interface)
-    *   `templates/` directory (with `index.html`, `results.html`)
-    *   `giphy_downloader.py`
-    *   `morbotron_downloader.py`
-    *   `wikimedia_downloader.py`
-    *   `pixabay_downloader.py`
-    *   `frinkiac_downloader.py`
-    *   `mixkit_downloader.py`
-    *   `comb_io_downloader.py` (optional, currently with issues)
+## Setup: Getting Started
 
-2.  **API Keys**:
-    *   **Giphy (Required for Giphy)**:
-        *   Visit the [Giphy Developers page](https://developers.giphy.com/) to get an API key.
-        *   Open `giphy_downloader.py` and set `GIPHY_API_KEY = "YOUR_ACTUAL_GIPHY_API_KEY"`.
-    *   **Pixabay (Required for Pixabay)**:
-        *   Visit [Pixabay API page](https://pixabay.com/api/docs/) and get an API key.
-        *   Open `pixabay_downloader.py` and set `PIXABAY_API_KEY = "YOUR_ACTUAL_PIXABAY_API_KEY"`.
-    *   **Frinkiac & Mixkit (Web Scraping)**: These now use web scraping (via `requests` and `BeautifulSoup4`). They do not require API keys, but their reliability depends on the stability of the target websites' HTML structure. Frinkiac scraping targets HTML elements, while Mixkit attempts to parse embedded JSON from script tags.
+Follow these steps to get the tool running on your computer.
 
-3.  **Python Libraries**:
-    *   Install required libraries using pip. It's recommended to use a virtual environment.
+1.  **Get the Code:**
+    *   If you have `git` installed, clone the repository:
         ```bash
-        pip install requests beautifulsoup4 Flask
+        git clone <repository_url>
+        cd <repository_directory>
         ```
-    *   `requests`: For making HTTP requests.
-    *   `beautifulsoup4`: For web scraping (used by Frinkiac and Mixkit downloaders).
-    *   `Flask`: For the optional web interface.
-    *   (Optional but recommended for BeautifulSoup: `lxml` as a faster parser - `pip install lxml`)
+    *   Alternatively, download the project files as a ZIP and extract them. You'll need all the `.py` files and the `templates` folder.
 
+2.  **Python Version:**
+    *   Make sure you have Python 3.7 or newer installed.
 
-4.  **Flask for Web Interface (Optional)**:
-    *   To run the web app (after installing Flask):
+3.  **Install Required Libraries:**
+    *   The project uses a few external Python libraries. These are listed in `requirements.txt`.
+    *   It's highly recommended to use a Python virtual environment to keep dependencies for this project separate from others on your system.
         ```bash
-        pip install Flask
+        # Create a virtual environment (e.g., named 'venv')
+        python -m venv venv
+
+        # Activate it:
+        # On Windows:
+        # venv\Scripts\activate
+        # On macOS/Linux:
+        # source venv/bin/activate
         ```
-    *   Run the web app using: `python app.py`. It will typically be available at `http://127.0.0.1:5000`.
+    *   Once your virtual environment is active, install the libraries:
+        ```bash
+        pip install -r requirements.txt
+        ```
+        This will install `Flask`, `requests`, and `BeautifulSoup4`.
 
-## Usage
+4.  **API Keys (Important!):**
+    *   Some services require an API key to let you access their content.
+    *   **Giphy API Key**:
+        *   Go to the [Giphy Developers page](https://developers.giphy.com/) and create an account (or log in) to get an API key.
+        *   **Set this key as an environment variable named `GIPHY_API_KEY`**.
+            *   **macOS/Linux (temporary for current session):**
+                ```bash
+                export GIPHY_API_KEY="YOUR_ACTUAL_GIPHY_API_KEY"
+                ```
+                (To make it permanent, add this line to your shell's profile file, like `~/.bashrc` or `~/.zshrc`, then source it or open a new terminal.)
+            *   **Windows (temporary for current session in Command Prompt):**
+                ```bash
+                set GIPHY_API_KEY="YOUR_ACTUAL_GIPHY_API_KEY"
+                ```
+            *   **Windows (temporary for current session in PowerShell):**
+                ```bash
+                $env:GIPHY_API_KEY="YOUR_ACTUAL_GIPHY_API_KEY"
+                ```
+                (For permanent setting on Windows, search for "environment variables" in system settings.)
+        *   The Giphy part of the tool will not work without this key. The provided key `fqVxYjMvmpUS6ltig5MEfv0vMBP6HzFn` can be used for testing.
+    *   **Pixabay API Key**:
+        *   Visit the [Pixabay API page](https://pixabay.com/api/docs/) to get a free API key.
+        *   **Set this key as an environment variable named `PIXABAY_API_KEY`**.
+            *   Follow the same method as for the Giphy key (e.g., `export PIXABAY_API_KEY="YOUR_KEY"`).
+        *   Pixabay search will not work without this.
+    *   **Other Services (Frinkiac, Morbotron, Mixkit, Wikimedia):** These currently use web scraping or public APIs that don't require a personal key setup from your side.
 
-The main script is `media_downloader_tool.py`.
+5.  **File List (for reference):**
+    *   `media_downloader_tool.py`: The main command-line script.
+    *   `app.py`: The Flask web application.
+    *   `templates/`: Folder containing HTML for the web app (`index.html`, `results.html`).
+    *   `giphy_downloader.py`: Handles Giphy.
+    *   `morbotron_scraper.py`: Handles Morbotron.
+    *   `wikimedia_scraper.py`: Handles Wikimedia Commons.
+    *   `pixabay_scraper.py`: Handles Pixabay.
+    *   `frinkiac_scraper.py`: Handles Frinkiac.
+    *   `mixkit_scraper.py`: Handles Mixkit.
+    *   `comb_io_scraper.py`: (Currently not fully functional).
+    *   `requirements.txt`: Lists Python libraries needed.
 
+## How to Use
+
+You have two ways to use this tool:
+
+### 1. Command-Line Interface (CLI)
+
+Open your terminal or command prompt. If you created a virtual environment, make sure it's activated.
+
+The basic command structure is:
 ```bash
-python media_downloader_tool.py [queries...] --platforms <platform_names...> [options]
+python media_downloader_tool.py "your search query" --platforms <platform1> <platform2> [options]
 ```
 
-### Arguments
+**Arguments & Options:**
 
-*   `queries` (required unless `--query_file` is used): One or more search terms. If a term contains spaces, enclose it in quotes.
-    *   Example: `"funny cat"` `dog`
-
-*   `--platforms <platform_names...>` (required): A list of platforms to search.
+*   `queries` (required unless `--query_file` is used): The search term(s). If a term has spaces, put it in quotes (e.g., `"funny cat"`). You can list multiple queries.
+*   `--platforms <platform_names...>` (required): Which sites to search.
     *   Choices: `giphy`, `morbotron`, `wikimedia`, `pixabay`, `frinkiac`, `mixkit`
-    *   Example: `--platforms giphy wikimedia pixabay`
-
-### Options
-
-*   `--query_file <filepath>`: Path to a text file containing search queries, one query per line. This overrides queries provided directly on the command line.
+    *   Example: `--platforms giphy wikimedia`
+*   `--query_file <filepath>`: Path to a text file with one search query per line.
     *   Example: `--query_file my_searches.txt`
-    ```
-    # my_searches.txt content:
-    happy dance
-    futurama bender
-    historical map
-    ```
-
-*   `--limit <number>`: Maximum number of items to download per query, per platform (in direct mode), or total items to select from in interactive mode before applying further limits. Default: `5`.
-    *   Example: `--limit 10`
-
-*   `--output_dir <directory_path>`: Base directory to save downloaded media. Platform-specific and query-specific subfolders will be created within this directory. Default: `downloaded_media`.
-    *   Example: `--output_dir ./my_collection`
-
-*   `--media_type <type>`: Preferred type of media to download. Note that not all platforms support all types. Default: `all`.
+*   `--limit <number>`: Max items to download per query/platform. Default: `5`.
+*   `--output_dir <directory_path>`: Where to save files. Default: `downloaded_media`.
+    *   Example: `--output_dir ./my_cool_media`
+*   `--media_type <type>`: Type of media. Default: `all`.
     *   Choices: `all`, `image`, `gif`, `video`, `audio`, `sticker`
-    *   `sticker`: Primarily for Giphy.
-    *   `audio`: Primarily for Wikimedia Commons.
-    *   `image`: For Morbotron (main type) and Wikimedia. Giphy GIFs can be considered images.
-    *   Example: `--media_type video`
+*   `--interactive`: Shows a list of found items and asks you to pick which ones to download.
+*   `--download_timeout <seconds>`: Max time (seconds) to wait for a single file to download.
+*   `--api_call_timeout <seconds>`: Max time (seconds) to wait for a response from a platform's search. Default: `10`.
+*   `-h`, `--help`: Shows all commands and options.
 
-*   `--interactive`: If set, the tool will first list all found media items across the specified platforms for each query. You can then interactively choose which items to download by entering their numbers.
-    *   Example: `--interactive`
-
-*   `--download_timeout <seconds>`: Global timeout in seconds for downloading each media file. Overrides platform-specific default timeouts.
-    *   Example: `--download_timeout 30` (wait up to 30s for a download)
-
-*   `--api_call_timeout <seconds>`: Timeout in seconds for API search calls to each platform. Default: `10`.
-    *   Example: `--api_call_timeout 15`
-
-*   `-h`, `--help`: Show the help message and exit.
-
-### Examples
+**CLI Examples:**
 
 1.  **Download 3 GIFs of "happy cats" from Giphy:**
     ```bash
     python media_downloader_tool.py "happy cats" --platforms giphy --media_type gif --limit 3
     ```
 
-2.  **Download up to 5 images or videos related to "Futurama" from Morbotron and Wikimedia:**
+2.  **Search Morbotron and Frinkiac for "excellent" quotes/images, interactively choose 2:**
     ```bash
-    python media_downloader_tool.py "Futurama" --platforms morbotron wikimedia --media_type all --limit 5 --output_dir "tv_shows/futurama"
+    python media_downloader_tool.py "excellent" --platforms morbotron frinkiac --interactive --limit 2
     ```
 
-3.  **Interactively search for "space nebula" images on Wikimedia and "dancing alien" on Giphy, then choose what to download:**
+3.  **Download videos related to "nature" from Pixabay and Mixkit, save to `my_videos` folder:**
     ```bash
-    python media_downloader_tool.py "space nebula" "dancing alien" --platforms wikimedia giphy --media_type image --interactive
+    python media_downloader_tool.py "nature" --platforms pixabay mixkit --media_type video --output_dir my_videos
     ```
-    *(Note: Giphy primarily serves GIFs/stickers; "image" for Giphy will fetch GIFs.)*
 
-4.  **Use a query file to download various media:**
-    ```bash
-    python media_downloader_tool.py --query_file "search_terms.txt" --platforms morbotron wikimedia --limit 2
-    ```
-    *(Assuming `search_terms.txt` exists with one search term per line.)*
+### 2. Web Interface
 
-## Output Structure
+This provides a simpler, graphical way to search and download.
 
-Downloaded media will be saved in the following structure:
+1.  **Start the Web App:**
+    *   Open your terminal, navigate to the project directory, and activate your virtual environment if you have one.
+    *   Run:
+        ```bash
+        python app.py
+        ```
+    *   You should see a message like `* Running on http://127.0.0.1:5000/`.
+
+2.  **Use in Your Browser:**
+    *   Open your web browser (like Chrome, Firefox, etc.) and go to the address shown (usually `http://127.0.0.1:5000`).
+    *   You'll see a page where you can:
+        *   Type your search query.
+        *   Select which platforms to search.
+        *   Choose the media type.
+        *   Set how many results to show per platform.
+        *   Click "Search".
+    *   The results will appear on a new page. Each item will have a title, a preview (if possible), and information about its source.
+    *   Click the "Download" button next to any item you want to save. Your browser will download it.
+
+**Where do files from the web interface go?**
+When you click download in the web interface, the file is first downloaded to a temporary folder on the server (the computer running `app.py`, inside a folder like `instance/downloads`) and then sent to your browser. Your browser will typically save it to your default "Downloads" folder.
+
+## Output Structure (CLI)
+
+When using the command-line tool, downloaded media is saved like this:
 
 ```
 <output_dir>/
-├── <sanitized_query_1>/
-│   ├── <platform_1>/
-│   │   └── <platform_query_id_timestamp.ext>
+├── <your_search_query_as_folder_name>/
+│   ├── <platform_name>/
+│   │   └── <filename.ext>
 │   │   └── ...
-│   ├── <platform_2>/
-│   │   └── <platform_query_id_timestamp.ext>
-│   │   └── ...
-├── <sanitized_query_2>/
-│   ├── <platform_1>/
-│   │   └── ...
+│   ├── <another_platform_name>/
+│   │   └── <filename.ext>
 ...
 ```
+*   `<output_dir>`: The folder you specified with `--output_dir` (or `downloaded_media` by default).
+*   `<your_search_query_as_folder_name>`: The search term, made safe for folder names.
+*   `<platform_name>`: e.g., `giphy`, `morbotron`.
 
-*   `<output_dir>`: The directory specified by `--output_dir` (default: `downloaded_media`).
-*   `<sanitized_query_X>`: The search query, sanitized to be a valid directory name.
-*   `<platform_X>`: Name of the platform (e.g., `giphy`, `morbotron`, `wikimedia`).
-*   Filenames are generated to be descriptive, usually including the platform, parts of the query, and a unique ID or timestamp.
+## Troubleshooting & Notes
 
-## Error Handling & Timeouts
-
-*   The tool includes basic error handling for API requests and downloads (e.g., network issues, timeouts).
-*   If a platform's API is unavailable or returns an error, the tool will report it and continue with other platforms/queries.
-*   `--api_call_timeout` controls how long the script waits for a response from the platform's search API.
-*   `--download_timeout` controls how long the script waits for an individual file to download. If not set, platform-specific defaults are used (typically 10-15 seconds).
-
-## Future Enhancements (Potential)
-
-*   **Comb.io Integration**: Resolve API access issues to re-enable Comb.io.
-*   **Web Interface Enhancements**:
-    *   More advanced filtering and sorting options directly in the UI.
-    *   User accounts or persistent settings.
-    *   Improved asynchronous operations for searching and downloading to prevent UI blocking.
-    *   Direct feedback on the page for download status.
-*   **Advanced Media Filtering**: More granular filtering options for CLI and Web (e.g., by image size, video duration - if APIs support it).
-*   **Configuration File**: For API keys and default settings for CLI.
-*   **Unit Tests**: For increased reliability.
+*   **No Giphy/Pixabay results?** Double-check your `GIPHY_API_KEY` and `PIXABAY_API_KEY` environment variables are correctly set and that the keys themselves are valid.
+*   **Web Scraping**: Services like Frinkiac, Morbotron, and Mixkit are accessed by web scraping. If these sites change their structure, the tool might stop working for them until it's updated.
+*   **Timeouts**: If you're on a slow connection, you might need to increase `--download_timeout` or `--api_call_timeout`.
+*   **Flask Web App is for Local Use**: The `app.py` web interface is mainly for running on your own computer. Deploying it to a public web server requires additional steps and security considerations.
 
 ## Contributing
 
-Contributions are welcome! If you'd like to add features, fix bugs, or improve documentation, please feel free to fork the repository and submit a pull request.
+Found a bug or have an idea for an improvement? Contributions are welcome!
 
-## Workflow Diagrams
+---
 
-### CLI Tool Workflow
-
-```mermaid
-graph TD
-    A["User Executes media_downloader_tool.py with Args"] --> B{"Parse CLI Arguments"};
-    B --> C{"Load Queries (Direct or from File)"};
-    C --> D["Loop Through Each Query"];
-    D --> E{"Interactive Mode?"};
-    E -- Yes --> F["Fetch Media List from Platforms (list_X_media returns dict with items/error/status)"];
-    F --> G["Display Found Items to User (from items list in dict)"];
-    G --> H["User Selects Items"];
-    H --> I["Download Selected Items (using download_selected_item)"];
-    I --> J["Save to Output Directory"];
-    J --> K["Next Query or End"];
-    E -- No --> L["Call Direct Search & Download Functions (search_X_media)"];
-    L -- "search_X_media calls list_X_media internally" --> L_sub["Processes items/errors/status from dict for CLI output"];
-    L_sub --> M["Download Items Directly (if items found & no critical error)"];
-    M --> J;
-    D -- "No More Queries" --> K;
-```
-
-### Web Interface Workflow (Flask App)
-
-```mermaid
-graph TD
-    subgraph "User Browser"
-        U1["User Navigates to / URL"]
-        U2["User Submits Search Form to /search"]
-        U3["User Clicks Download Button on /results"]
-    end
-
-    subgraph "Flask Server (app.py)"
-        S1["Route: / - Renders index.html (shows API key warnings)"]
-        S2["Route: /search - Handles Form"]
-        S3["Route: /download - Handles Download Request"]
-
-        S2A["Call list_X_media for selected platforms (gets items/errors/status)"]
-        S2B["Render results.html with items & platform statuses"]
-
-        S3A["Call download_selected_item utility"]
-        S3B["File saved to server's download folder (instance/downloads)"]
-        S3C["Serve file using send_from_directory"]
-    end
-
-    subgraph "Downloader Modules (API/Scraping)"
-        DM1["list_X_media functions (return dict with items, error, status)"]
-        DM2["download_file utilities (used by download_selected_item)"]
-    end
-
-    U1 --> S1;
-    U2 --> S2;
-    S2 --> S2A;
-    S2A --> DM1;
-    DM1 --> S2A;
-    S2A --> S2B;
-    S2B --> U2_Results_PageDisplayed["User views results page with statuses"];
-
-    U2_Results_PageDisplayed -- "User clicks download" --> U3;
-    U3 --> S3;
-    S3 --> S3A;
-    S3A --> DM2;
-    DM2 --> S3B;
-    S3B --> S3C;
-    S3C --> U3_File_Downloaded["User receives downloaded file"];
-```
-
-*(Diagrams are rendered by GitHub when viewing the README.md file.)*
-
-## Web Interface Deployment
-
-The provided web interface is a Flask (Python) application. Here are some important considerations for deployment:
-
-*   **GitHub Pages Limitation**: GitHub Pages is designed for hosting **static websites** (HTML, CSS, JavaScript files). It cannot directly run Python backend code like a Flask application. Therefore, the Flask web interface in this project cannot be deployed directly to GitHub Pages.
-
-*   **Suitable Hosting Platforms for Flask Apps**: To deploy the Flask web interface, you will need a hosting platform that supports Python web applications. Some popular options include:
-    *   **PaaS (Platform as a Service)**:
-        *   **Heroku**: Offers a free tier and is relatively easy to deploy Python/Flask apps.
-        *   **PythonAnywhere**: Specifically designed for Python, also has a free tier for small projects.
-        *   **Google App Engine**: Part of Google Cloud, scalable.
-        *   **AWS Elastic Beanstalk**: Part of Amazon Web Services, highly scalable.
-        *   **Microsoft Azure App Service**: Part of Microsoft Azure.
-    *   **VPS (Virtual Private Server)**:
-        *   Services like DigitalOcean, Linode, Vultr allow you to rent a virtual server where you can set up a Python environment, a web server (like Gunicorn or Waitress), and run your Flask app. This offers more control but requires more setup.
-    *   **Containers**:
-        *   You can containerize the Flask application using **Docker** and then deploy the container to services like AWS ECS, Google Kubernetes Engine (GKE), or Docker Hub with a cloud provider.
-
-*   **General Deployment Steps (Conceptual)**:
-    1.  **Prepare your app for production**:
-        *   Use a production-grade WSGI server (e.g., Gunicorn, Waitress) instead of Flask's built-in development server (`app.run(debug=True)`).
-        *   Set `DEBUG = False` in a production environment.
-        *   Manage secret keys securely.
-    2.  **Dependencies**: Ensure all dependencies are listed in a `requirements.txt` file (`pip freeze > requirements.txt`).
-    3.  **Choose a hosting provider** from the options above (or others).
-    4.  **Follow the provider's deployment guide**: Each platform will have specific instructions for deploying Python/Flask applications. This often involves:
-        *   Pushing your code to a Git repository linked to the service (e.g., Heroku).
-        *   Configuring environment variables (like API keys, if not hardcoded for personal use).
-        *   Setting up a `Procfile` (common for Heroku, specifying how to run your app).
-
-*   **Considerations for this Specific App**:
-    *   **File Downloads**: The current web app saves downloaded media to the server's local filesystem (`instance/downloads`) and then serves them. Ensure your hosting solution provides persistent storage if you want these downloads to remain across deployments or server restarts. For ephemeral storage, this is fine, but files will be lost.
-    *   **API Keys**: If deploying publicly, avoid committing API keys directly into your repository. Use environment variables provided by the hosting platform. (For this project, the Giphy API key is in `giphy_downloader.py`, which is not ideal for a public repo if it contains a real key).
-
-This project's web interface is primarily intended for local use or deployment in a trusted environment due to its direct handling of file system operations and API keys.
+This README aims to be simple and direct. Let me know if anything is unclear!

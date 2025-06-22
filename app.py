@@ -15,12 +15,12 @@ from media_downloader_tool import (
 
 # Import listing functions from individual downloaders
 from giphy_downloader import list_giphy_media, GIPHY_API_KEY, DEFAULT_DOWNLOAD_TIMEOUT as GIPHY_TIMEOUT
-from morbotron_downloader import list_morbotron_media, DEFAULT_DOWNLOAD_TIMEOUT as MORBOTRON_TIMEOUT
-from wikimedia_downloader import list_wikimedia_media, DEFAULT_DOWNLOAD_TIMEOUT as WIKIMEDIA_TIMEOUT
-from pixabay_downloader import list_pixabay_videos, PIXABAY_API_KEY, DEFAULT_DOWNLOAD_TIMEOUT as PIXABAY_TIMEOUT
-from frinkiac_downloader import list_frinkiac_media, DEFAULT_DOWNLOAD_TIMEOUT as FRINKIAC_TIMEOUT
-from mixkit_downloader import list_mixkit_videos, DEFAULT_DOWNLOAD_TIMEOUT as MIXKIT_TIMEOUT
-# from comb_io_downloader import list_comb_io_media # If it becomes available
+from morbotron_scraper import list_morbotron_media, DEFAULT_DOWNLOAD_TIMEOUT as MORBOTRON_TIMEOUT
+from wikimedia_scraper import list_wikimedia_media, DEFAULT_DOWNLOAD_TIMEOUT as WIKIMEDIA_TIMEOUT
+from pixabay_scraper import list_pixabay_videos, PIXABAY_API_KEY, DEFAULT_DOWNLOAD_TIMEOUT as PIXABAY_TIMEOUT
+from frinkiac_scraper import list_frinkiac_media, DEFAULT_DOWNLOAD_TIMEOUT as FRINKIAC_TIMEOUT
+from mixkit_scraper import list_mixkit_videos, DEFAULT_DOWNLOAD_TIMEOUT as MIXKIT_TIMEOUT
+# from comb_io_scraper import list_comb_io_media # If it becomes available
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24) # For session management, flash messages, etc.

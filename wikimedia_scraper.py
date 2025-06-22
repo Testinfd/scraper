@@ -81,7 +81,8 @@ def search_wikimedia(query, limit=5, output_dir="wikimedia_media", media_type="a
     # The `timeout` parameter from the old signature is now `api_timeout` for the listing part.
     # `download_timeout` is a new parameter for the actual file downloads.
 
-    listed_items_data = list_wikimedia_media(query, limit, media_type, api_timeout) # list_wikimedia_media uses its api_timeout param
+    # The 5th argument passed to search_wikimedia is 'timeout', which is intended for the API call.
+    listed_items_data = list_wikimedia_media(query, limit, media_type, timeout)
     listed_items = listed_items_data.get("items", [])
 
     if listed_items_data.get("error"):
@@ -104,7 +105,7 @@ def search_wikimedia(query, limit=5, output_dir="wikimedia_media", media_type="a
         # Note: item_to_dl already contains 'type', 'url', 'filename' from list_wikimedia_media
         print(f"Attempting to download Wikimedia item: {item_to_dl['title']} (Type: {item_to_dl['type']}) from {item_to_dl['url']}")
         # Pass the specific download_timeout to the download_file utility
-        download_path = download_file(item_to_dl['url'], output_dir, item_to_dl['filename'], timeout=download_timeout)
+        download_path = download_file(item_to_dl['url'], output_dir, item_to_dl['filename'], timeout=DEFAULT_DOWNLOAD_TIMEOUT)
         if download_path:
             downloaded_files_list.append(download_path)
 
