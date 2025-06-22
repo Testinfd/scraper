@@ -7,14 +7,25 @@ import time
 from giphy_downloader import search_giphy, list_giphy_media, download_file as giphy_download_file, DEFAULT_DOWNLOAD_TIMEOUT as GIPHY_TIMEOUT
 from morbotron_downloader import search_morbotron, list_morbotron_media, download_file as morbotron_download_file, DEFAULT_DOWNLOAD_TIMEOUT as MORBOTRON_TIMEOUT
 from wikimedia_downloader import search_wikimedia, list_wikimedia_media, download_file as wikimedia_download_file, DEFAULT_DOWNLOAD_TIMEOUT as WIKIMEDIA_TIMEOUT
-# Comb.io is currently excluded due to API access issues
+from pixabay_downloader import search_pixabay_videos, list_pixabay_videos, download_file as pixabay_download_file, DEFAULT_DOWNLOAD_TIMEOUT as PIXABAY_TIMEOUT
+from frinkiac_downloader import search_frinkiac_media, list_frinkiac_media, download_file as frinkiac_download_file, DEFAULT_DOWNLOAD_TIMEOUT as FRINKIAC_TIMEOUT
+from mixkit_downloader import search_mixkit_videos, list_mixkit_videos, download_file as mixkit_download_file, DEFAULT_DOWNLOAD_TIMEOUT as MIXKIT_TIMEOUT
+# Comb.io is currently excluded
 # from comb_io_downloader import search_comb_io, list_comb_io_media, download_file as comb_io_download_file, DEFAULT_DOWNLOAD_TIMEOUT as COMBIO_TIMEOUT
 
-SUPPORTED_PLATFORMS = ["giphy", "morbotron", "wikimedia"] # Add "comb_io" if it's to be included
+SUPPORTED_PLATFORMS = ["giphy", "morbotron", "wikimedia", "pixabay", "frinkiac", "mixkit"]
 
 
 # Generic download function for interactive mode, using platform-specific downloaders
 def download_selected_item(item, base_output_dir, download_timeout_override=None):
+    # Ensure base_output_dir itself exists, though platform_output_dir creation is handled below
+    if not os.path.exists(base_output_dir):
+        try:
+            os.makedirs(base_output_dir)
+        except OSError as e:
+            print(f"Error creating base directory {base_output_dir}: {e}")
+            return None # Cannot proceed if base dir creation fails
+
     platform_output_dir = os.path.join(base_output_dir, item['platform'])
     if not os.path.exists(platform_output_dir):
         os.makedirs(platform_output_dir)
@@ -26,6 +37,9 @@ def download_selected_item(item, base_output_dir, download_timeout_override=None
         if item['platform'] == 'giphy': actual_timeout = GIPHY_TIMEOUT
         elif item['platform'] == 'morbotron': actual_timeout = MORBOTRON_TIMEOUT
         elif item['platform'] == 'wikimedia': actual_timeout = WIKIMEDIA_TIMEOUT
+        elif item['platform'] == 'pixabay': actual_timeout = PIXABAY_TIMEOUT
+        elif item['platform'] == 'frinkiac': actual_timeout = FRINKIAC_TIMEOUT
+        elif item['platform'] == 'mixkit': actual_timeout = MIXKIT_TIMEOUT
         # elif item['platform'] == 'comb_io': actual_timeout = COMBIO_TIMEOUT
         else: actual_timeout = 10 # A generic fallback
 
@@ -33,6 +47,9 @@ def download_selected_item(item, base_output_dir, download_timeout_override=None
     if item['platform'] == 'giphy': downloader_function = giphy_download_file
     elif item['platform'] == 'morbotron': downloader_function = morbotron_download_file
     elif item['platform'] == 'wikimedia': downloader_function = wikimedia_download_file
+    elif item['platform'] == 'pixabay': downloader_function = pixabay_download_file
+    elif item['platform'] == 'frinkiac': downloader_function = frinkiac_download_file
+    elif item['platform'] == 'mixkit': downloader_function = mixkit_download_file
     # elif item['platform'] == 'comb_io': downloader_function = comb_io_download_file
 
     if downloader_function:
@@ -151,12 +168,29 @@ def main():
             if "giphy" in args.platforms:
                 all_found_media_items.extend(list_giphy_media(current_query, args.limit * 2, args.media_type, args.api_call_timeout))
             if "morbotron" in args.platforms:
-                # Morbotron is image only mostly
-                mt = "image" if args.media_type not in ["image"] else args.media_type
+                mt = "image" if args.media_type not in ["image", "all"] else args.media_type # Frinkiac/Morbotron are image specific
                 if args.media_type == "all" or args.media_type == "image":
                      all_found_media_items.extend(list_morbotron_media(current_query, args.limit * 2, mt, args.api_call_timeout))
             if "wikimedia" in args.platforms:
                 all_found_media_items.extend(list_wikimedia_media(current_query, args.limit * 2, args.media_type, args.api_call_timeout))
+            if "pixabay" in args.platforms:
+                # Pixabay downloader currently only supports video type via its video API
+                if args.media_type == "all" or args.media_type == "video":
+                    all_found_media_items.extend(list_pixabay_videos(current_query, args.limit * 2, api_timeout=args.api_call_timeout))
+                elif args.interactive: # only print if interactive and type mismatch
+                    print(f"Pixabay: Skipping as it only supports 'video' or 'all' media type for listing, not '{args.media_type}'.")
+            if "frinkiac" in args.platforms:
+                mt = "image" if args.media_type not in ["image", "all"] else args.media_type
+                if args.media_type == "all" or args.media_type == "image": # Frinkiac is image specific
+                    all_found_media_items.extend(list_frinkiac_media(current_query, args.limit * 2, api_timeout=args.api_call_timeout))
+                elif args.interactive:
+                    print(f"Frinkiac: Skipping as it only supports 'image' or 'all' media type for listing, not '{args.media_type}'.")
+            if "mixkit" in args.platforms:
+                # Mixkit downloader currently only supports video type
+                if args.media_type == "all" or args.media_type == "video":
+                    all_found_media_items.extend(list_mixkit_videos(current_query, args.limit * 2, api_timeout=args.api_call_timeout))
+                elif args.interactive:
+                     print(f"Mixkit: Skipping as it only supports 'video' or 'all' media type for listing, not '{args.media_type}'.")
             # Add other platforms (comb_io) here if they become active
 
             if not all_found_media_items:
@@ -222,12 +256,12 @@ def main():
                 print(f"Processing Morbotron for '{current_query}'...")
                 morbotron_output_subdir = os.path.join(query_specific_output_dir, "morbotron")
                 try:
-                    m_type = "image" if args.media_type not in ["image"] else args.media_type
+                    # Morbotron is image specific
                     if args.media_type == "all" or args.media_type == "image":
-                        downloaded_count = search_morbotron(current_query, args.limit, morbotron_output_subdir, m_type, args.api_call_timeout)
+                        downloaded_count = search_morbotron(current_query, args.limit, morbotron_output_subdir, "image", args.api_call_timeout)
                         if downloaded_count: print(f"Morbotron: Downloaded {len(downloaded_count)} files.")
                         else: print(f"Morbotron: No files downloaded for '{current_query}'.")
-                    else: print("Morbotron: Skipping due to incompatible media type request.")
+                    else: print(f"Morbotron: Skipping as it only supports 'image' or 'all' media type, not '{args.media_type}'.")
                 except Exception as e: print(f"Morbotron Error: {e}")
                 print("-" * 20 + "\n"); time.sleep(1)
 
@@ -236,11 +270,53 @@ def main():
                 print(f"Processing Wikimedia for '{current_query}'...")
                 wikimedia_output_subdir = os.path.join(query_specific_output_dir, "wikimedia")
                 try:
-                    m_type = args.media_type if args.media_type != "sticker" else "all"
+                    m_type = args.media_type if args.media_type != "sticker" else "all" # Wikimedia supports various types
                     downloaded_count = search_wikimedia(current_query, args.limit, wikimedia_output_subdir, m_type, args.api_call_timeout)
                     if downloaded_count: print(f"Wikimedia: Downloaded {len(downloaded_count)} files.")
                     else: print(f"Wikimedia: No files downloaded for '{current_query}'.")
                 except Exception as e: print(f"Wikimedia Error: {e}")
+                print("-" * 20 + "\n"); time.sleep(1)
+
+            if "pixabay" in args.platforms:
+                print("-" * 20)
+                print(f"Processing Pixabay for '{current_query}'...")
+                pixabay_output_subdir = os.path.join(query_specific_output_dir, "pixabay")
+                try:
+                    # Pixabay (this module) is video specific
+                    if args.media_type == "all" or args.media_type == "video":
+                        downloaded_count = search_pixabay_videos(current_query, args.limit, pixabay_output_subdir, api_timeout=args.api_call_timeout, download_timeout=args.download_timeout or PIXABAY_TIMEOUT)
+                        if downloaded_count: print(f"Pixabay: Downloaded {len(downloaded_count)} files.")
+                        else: print(f"Pixabay: No files downloaded for '{current_query}'.")
+                    else: print(f"Pixabay: Skipping as it only supports 'video' or 'all' media type, not '{args.media_type}'.")
+                except Exception as e: print(f"Pixabay Error: {e}")
+                print("-" * 20 + "\n"); time.sleep(1)
+
+            if "frinkiac" in args.platforms:
+                print("-" * 20)
+                print(f"Processing Frinkiac for '{current_query}'...")
+                frinkiac_output_subdir = os.path.join(query_specific_output_dir, "frinkiac")
+                try:
+                    # Frinkiac is image specific
+                    if args.media_type == "all" or args.media_type == "image":
+                        downloaded_count = search_frinkiac_media(current_query, args.limit, frinkiac_output_subdir, api_timeout=args.api_call_timeout, download_timeout=args.download_timeout or FRINKIAC_TIMEOUT)
+                        if downloaded_count: print(f"Frinkiac: Downloaded {len(downloaded_count)} files.")
+                        else: print(f"Frinkiac: No files downloaded for '{current_query}'.")
+                    else: print(f"Frinkiac: Skipping as it only supports 'image' or 'all' media type, not '{args.media_type}'.")
+                except Exception as e: print(f"Frinkiac Error: {e}")
+                print("-" * 20 + "\n"); time.sleep(1)
+
+            if "mixkit" in args.platforms:
+                print("-" * 20)
+                print(f"Processing Mixkit for '{current_query}'...")
+                mixkit_output_subdir = os.path.join(query_specific_output_dir, "mixkit")
+                try:
+                    # Mixkit (this module) is video specific
+                    if args.media_type == "all" or args.media_type == "video":
+                        downloaded_count = search_mixkit_videos(current_query, args.limit, mixkit_output_subdir, api_timeout=args.api_call_timeout, download_timeout=args.download_timeout or MIXKIT_TIMEOUT)
+                        if downloaded_count: print(f"Mixkit: Downloaded {len(downloaded_count)} files.")
+                        else: print(f"Mixkit: No files downloaded for '{current_query}'.")
+                    else: print(f"Mixkit: Skipping as it only supports 'video' or 'all' media type, not '{args.media_type}'.")
+                except Exception as e: print(f"Mixkit Error: {e}")
                 print("-" * 20 + "\n"); time.sleep(1)
 
             # Add Comb.io direct download here if reactivated

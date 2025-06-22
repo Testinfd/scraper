@@ -144,15 +144,17 @@ def list_giphy_media(query, limit=25, media_type="gif", timeout=DEFAULT_DOWNLOAD
         print(f"Timeout during Giphy API request for query: {query}")
         return []
     except requests.exceptions.RequestException as e:
-        print(f"API request error for Giphy query '{query}': {e}")
-        return []
+        # print(f"API request error for Giphy query '{query}': {e}")
+        return {"items": [], "error": f"Giphy: API request error for '{query[:50]}': {e}", "status_message": None}
     except json.JSONDecodeError:
-        print(f"Error decoding JSON from Giphy: {response.text if 'response' in locals() else 'No response text'}")
-        return []
+        # print(f"Error decoding JSON from Giphy: {response.text if 'response' in locals() else 'No response text'}")
+        return {"items": [], "error": f"Giphy: Error decoding API response for '{query[:50]}'", "status_message": None}
+    except Exception as e: # Catch other potential errors
+        return {"items": [], "error": f"Giphy: Unexpected error for '{query[:50]}': {e}", "status_message": None}
 
     if not data.get("data"):
         # print(f"No results found for '{query}' on Giphy.") # Less verbose for listing
-        return []
+        return {"items": [], "error": None, "status_message": f"Giphy: No results found for '{query[:50]}'"}
 
     found_items = []
     query_words = query.split()
@@ -208,17 +210,46 @@ def list_giphy_media(query, limit=25, media_type="gif", timeout=DEFAULT_DOWNLOAD
                 "filename": file_name,
                 "platform": "giphy"
             })
-    return found_items
+    return {"items": found_items, "error": None, "status_message": None if found_items else f"Giphy: No items matched criteria for '{query[:50]}'"}
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Download GIFs from Giphy.")
+    # Updated main for testing the new return type of list_giphy_media
+    parser = argparse.ArgumentParser(description="Download media from Giphy.") # Changed "GIFs" to "media"
     parser.add_argument("query", type=str, help="Search query for Giphy.")
-    parser.add_argument("--limit", type=int, default=5, help="Maximum number of GIFs to download.")
-    parser.add_argument("--output_dir", type=str, default="giphy_media", help="Directory to save downloaded GIFs.")
+    parser.add_argument("--limit", type=int, default=5, help="Maximum number of items to download.")
+    parser.add_argument("--output_dir", type=str, default="giphy_media", help="Directory to save downloaded media.")
+    parser.add_argument("--media_type", type=str, default="gif", choices=["gif", "video", "sticker", "all"], help="Type of media to prefer.")
+    parser.add_argument("--timeout", type=int, default=DEFAULT_DOWNLOAD_TIMEOUT, help="Download timeout in seconds.")
+
 
     args = parser.parse_args()
 
-    print(f"Searching Giphy for '{args.query}' and downloading up to {args.limit} GIFs to '{args.output_dir}'...")
-    search_giphy(args.query, args.limit, args.output_dir)
-    print("Giphy download process complete.")
+    if GIPHY_API_KEY == "YOUR_GIPHY_API_KEY_HERE":
+        print("Please replace 'YOUR_GIPHY_API_KEY_HERE' with your actual Giphy API key in giphy_downloader.py")
+    else:
+        # Test listing
+        print(f"\n--- Listing Giphy for '{args.query}' (type: {args.media_type}, limit: {args.limit}) ---")
+        list_result = list_giphy_media(args.query, args.limit, args.media_type, args.timeout)
+        if list_result.get("error"):
+            print(f"Error listing: {list_result['error']}")
+        elif not list_result.get("items") and list_result.get("status_message"):
+            print(f"Status listing: {list_result['status_message']}")
+        elif list_result.get("items"):
+            print(f"Found {len(list_result['items'])} items for listing:")
+            for item in list_result['items']:
+                print(f"  - Title: {item['title']}, Type: {item['type']}, URL: {item['url']}")
+        else:
+            print("No items found or an unknown issue occurred during listing.")
+
+        # Test downloading using search_giphy
+        print(f"\n--- Downloading from Giphy for '{args.query}' (type: {args.media_type}, limit: {args.limit}) ---")
+        downloaded_files = search_giphy(args.query, args.limit, args.output_dir, args.media_type, args.timeout)
+        if downloaded_files:
+            print(f"Giphy: Successfully downloaded {len(downloaded_files)} files to '{args.output_dir}'.")
+        else:
+            # search_giphy prints its own "No results found" or error during processing,
+            # so this specific "else" might be redundant if search_giphy is verbose.
+            print(f"Giphy: No files were downloaded for '{args.query}'. Check logs if items were expected.")
+
+        print("\nGiphy CLI test process complete.")

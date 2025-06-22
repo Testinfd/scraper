@@ -17,6 +17,9 @@ from media_downloader_tool import (
 from giphy_downloader import list_giphy_media, GIPHY_API_KEY, DEFAULT_DOWNLOAD_TIMEOUT as GIPHY_TIMEOUT
 from morbotron_downloader import list_morbotron_media, DEFAULT_DOWNLOAD_TIMEOUT as MORBOTRON_TIMEOUT
 from wikimedia_downloader import list_wikimedia_media, DEFAULT_DOWNLOAD_TIMEOUT as WIKIMEDIA_TIMEOUT
+from pixabay_downloader import list_pixabay_videos, PIXABAY_API_KEY, DEFAULT_DOWNLOAD_TIMEOUT as PIXABAY_TIMEOUT
+from frinkiac_downloader import list_frinkiac_media, DEFAULT_DOWNLOAD_TIMEOUT as FRINKIAC_TIMEOUT
+from mixkit_downloader import list_mixkit_videos, DEFAULT_DOWNLOAD_TIMEOUT as MIXKIT_TIMEOUT
 # from comb_io_downloader import list_comb_io_media # If it becomes available
 
 app = Flask(__name__)
@@ -36,19 +39,24 @@ def get_platform_default_timeout(platform):
     if platform == "giphy": return GIPHY_TIMEOUT
     if platform == "morbotron": return MORBOTRON_TIMEOUT
     if platform == "wikimedia": return WIKIMEDIA_TIMEOUT
+    if platform == "pixabay": return PIXABAY_TIMEOUT
+    if platform == "frinkiac": return FRINKIAC_TIMEOUT
+    if platform == "mixkit": return MIXKIT_TIMEOUT
     # if platform == "comb_io": return COMBIO_TIMEOUT # Placeholder
     return 10 # Generic default
 
 @app.route('/', methods=['GET'])
 def index():
+    warnings = []
     if GIPHY_API_KEY == "YOUR_GIPHY_API_KEY_HERE":
-        giphy_warning = "Giphy API key is not set. Giphy searches will not work. Please set it in giphy_downloader.py."
-    else:
-        giphy_warning = None
+        warnings.append("Giphy API key is not set in giphy_downloader.py. Giphy searches will not work.")
+    if PIXABAY_API_KEY == "YOUR_PIXABAY_API_KEY_HERE":
+        warnings.append("Pixabay API key is not set in pixabay_downloader.py. Pixabay searches will not work.")
+
     return render_template('index.html',
-                           platforms=SUPPORTED_PLATFORMS,
+                           platforms=SUPPORTED_PLATFORMS, # SUPPORTED_PLATFORMS from media_downloader_tool.py will have all
                            media_types=["all", "image", "gif", "video", "audio", "sticker"],
-                           giphy_warning=giphy_warning)
+                           warnings=warnings if warnings else None)
 
 @app.route('/search', methods=['POST'])
 def search():
@@ -76,26 +84,65 @@ def search():
         if platform == 'giphy':
             if GIPHY_API_KEY != "YOUR_GIPHY_API_KEY_HERE":
                 platform_results = list_giphy_media(query, limit_per_platform * 2, media_type, api_call_timeout)
+            else:
+                print("Skipping Giphy search in web UI: API key not set.")
         elif platform == 'morbotron':
-             # Morbotron is image only mostly
             mt = "image" if media_type not in ["image", "all"] else media_type
             if media_type == "all" or media_type == "image":
                 platform_results = list_morbotron_media(query, limit_per_platform * 2, mt, api_call_timeout)
         elif platform == 'wikimedia':
             platform_results = list_wikimedia_media(query, limit_per_platform * 2, media_type, api_call_timeout)
+        elif platform == 'pixabay':
+            if PIXABAY_API_KEY != "YOUR_PIXABAY_API_KEY_HERE":
+                if media_type == "all" or media_type == "video":
+                    platform_results = list_pixabay_videos(query, limit_per_platform * 2, api_timeout=api_call_timeout)
+                # else: print(f"WebUI: Pixabay skipped, wrong media type '{media_type}'")
+            else:
+                print("Skipping Pixabay search in web UI: API key not set.")
+        elif platform == 'frinkiac':
+            if media_type == "all" or media_type == "image": # Frinkiac is image specific
+                platform_results = list_frinkiac_media(query, limit_per_platform * 2, api_timeout=api_call_timeout)
+            # else: print(f"WebUI: Frinkiac skipped, wrong media type '{media_type}'")
+        elif platform == 'mixkit':
+            if media_type == "all" or media_type == "video": # Mixkit is video specific (for this downloader)
+                platform_results = list_mixkit_videos(query, limit_per_platform * 2, api_timeout=api_call_timeout)
+            # else: print(f"WebUI: Mixkit skipped, wrong media type '{media_type}'")
         # elif platform == 'comb_io':
-            # platform_results = list_comb_io_media(query, limit_per_platform * 2, media_type, api_call_timeout)
+            # list_call_result = list_comb_io_media(query, limit_per_platform * 2, media_type, api_call_timeout)
 
-        all_results.extend(platform_results)
+        # Store structured results including errors/status
+        current_platform_data = {"platform_name": platform, "items": [], "error": None, "status_message": None}
+        if isinstance(platform_results, dict): # New return type
+            current_platform_data["items"] = platform_results.get("items", [])
+            current_platform_data["error"] = platform_results.get("error")
+            current_platform_data["status_message"] = platform_results.get("status_message")
+        elif isinstance(platform_results, list): # Old return type (fallback, should be phased out)
+             current_platform_data["items"] = platform_results
+
+        all_results.append(current_platform_data) # all_results is now a list of these dicts
+
+        # Only extend the flat list for display if items exist, for the old results.html compatibility (will change)
+        # For now, let's build a flat list for the results display, and a separate one for status
+        # This will be simplified when results.html is updated.
+        # flat_item_list.extend(current_platform_data["items"])
+
         time.sleep(0.5) # Small delay between platform API calls
 
     # Sanitize query for use as part of a directory name, if needed later for organizing downloads
     safe_query_name = "".join(c if c.isalnum() else "_" for c in query[:50]).strip('_') or "search"
 
+    # Consolidate all items from all platforms for display
+    display_items = []
+    for res_block in all_results:
+        display_items.extend(res_block.get('items', []))
+
+
     return render_template('results.html',
                            query=query,
-                           results=all_results[:limit_per_platform * len(selected_platforms)], # Global limit on displayed items
-                           limit_per_platform=limit_per_platform, # For information
+                           # results=flat_item_list[:limit_per_platform * len(selected_platforms)], # Old way
+                           results_data=all_results, # Pass the structured data
+                           display_items=display_items[:limit_per_platform * len(selected_platforms)], # Still limit overall display
+                           limit_per_platform=limit_per_platform,
                            safe_query_name=safe_query_name)
 
 

@@ -10,6 +10,9 @@ This Python-based command-line tool allows you to search for and download media 
     *   Giphy (GIFs, Stickers, short Videos)
     *   Morbotron (TV Show Screencaps - e.g., The Simpsons, Futurama)
     *   Wikimedia Commons (Images, Videos, Audio)
+    *   Pixabay (Videos)
+    *   Frinkiac (The Simpsons Screencaps by Quote)
+    *   Mixkit (Stock Videos)
     *   (Potentially Comb.io - currently facing API issues)
 *   **Multiple Keyword Search**:
     *   Provide multiple search queries directly on the command line.
@@ -33,17 +36,42 @@ This Python-based command-line tool allows you to search for and download media 
 
 1.  **Clone the repository (if applicable) or download the script files.**
     *   `media_downloader_tool.py` (main script)
+    *   `app.py` (for the web interface)
+    *   `templates/` directory (with `index.html`, `results.html`)
     *   `giphy_downloader.py`
     *   `morbotron_downloader.py`
     *   `wikimedia_downloader.py`
+    *   `pixabay_downloader.py`
+    *   `frinkiac_downloader.py`
+    *   `mixkit_downloader.py`
     *   `comb_io_downloader.py` (optional, currently with issues)
 
-2.  **Giphy API Key (Required for Giphy)**:
-    *   To use Giphy, you need an API key. Visit the [Giphy Developers page](https://developers.giphy.com/) to create an app and get your API key.
-    *   Open `giphy_downloader.py` and replace the placeholder `"YOUR_GIPHY_API_KEY_HERE"` with your actual API key:
-        ```python
-        GIPHY_API_KEY = "YOUR_ACTUAL_GIPHY_API_KEY"
+2.  **API Keys**:
+    *   **Giphy (Required for Giphy)**:
+        *   Visit the [Giphy Developers page](https://developers.giphy.com/) to get an API key.
+        *   Open `giphy_downloader.py` and set `GIPHY_API_KEY = "YOUR_ACTUAL_GIPHY_API_KEY"`.
+    *   **Pixabay (Required for Pixabay)**:
+        *   Visit [Pixabay API page](https://pixabay.com/api/docs/) and get an API key.
+        *   Open `pixabay_downloader.py` and set `PIXABAY_API_KEY = "YOUR_ACTUAL_PIXABAY_API_KEY"`.
+    *   **Frinkiac & Mixkit (Web Scraping)**: These now use web scraping (via `requests` and `BeautifulSoup4`). They do not require API keys, but their reliability depends on the stability of the target websites' HTML structure. Frinkiac scraping targets HTML elements, while Mixkit attempts to parse embedded JSON from script tags.
+
+3.  **Python Libraries**:
+    *   Install required libraries using pip. It's recommended to use a virtual environment.
+        ```bash
+        pip install requests beautifulsoup4 Flask
         ```
+    *   `requests`: For making HTTP requests.
+    *   `beautifulsoup4`: For web scraping (used by Frinkiac and Mixkit downloaders).
+    *   `Flask`: For the optional web interface.
+    *   (Optional but recommended for BeautifulSoup: `lxml` as a faster parser - `pip install lxml`)
+
+
+4.  **Flask for Web Interface (Optional)**:
+    *   To run the web app (after installing Flask):
+        ```bash
+        pip install Flask
+        ```
+    *   Run the web app using: `python app.py`. It will typically be available at `http://127.0.0.1:5000`.
 
 ## Usage
 
@@ -59,8 +87,8 @@ python media_downloader_tool.py [queries...] --platforms <platform_names...> [op
     *   Example: `"funny cat"` `dog`
 
 *   `--platforms <platform_names...>` (required): A list of platforms to search.
-    *   Choices: `giphy`, `morbotron`, `wikimedia`
-    *   Example: `--platforms giphy wikimedia`
+    *   Choices: `giphy`, `morbotron`, `wikimedia`, `pixabay`, `frinkiac`, `mixkit`
+    *   Example: `--platforms giphy wikimedia pixabay`
 
 ### Options
 
@@ -155,9 +183,13 @@ Downloaded media will be saved in the following structure:
 ## Future Enhancements (Potential)
 
 *   **Comb.io Integration**: Resolve API access issues to re-enable Comb.io.
-*   **Web Interface**: A simple web UI for easier searching and downloading (would require additional libraries like Flask/Streamlit and different deployment).
-*   **Advanced Filtering**: More granular filtering options (e.g., by image size, video duration - if APIs support it).
-*   **Configuration File**: For API keys and default settings.
+*   **Web Interface Enhancements**:
+    *   More advanced filtering and sorting options directly in the UI.
+    *   User accounts or persistent settings.
+    *   Improved asynchronous operations for searching and downloading to prevent UI blocking.
+    *   Direct feedback on the page for download status.
+*   **Advanced Media Filtering**: More granular filtering options for CLI and Web (e.g., by image size, video duration - if APIs support it).
+*   **Configuration File**: For API keys and default settings for CLI.
 *   **Unit Tests**: For increased reliability.
 
 ## Contributing
@@ -170,58 +202,66 @@ Contributions are welcome! If you'd like to add features, fix bugs, or improve d
 
 ```mermaid
 graph TD
-    A[User Executes Script] --> B{Parse CLI Arguments}
-    B --> C{Load Queries}
-    C --> D[Loop Through Queries]
-    D --> E{Interactive Mode?}
-    E -- Yes --> F[Fetch Media List]
-    F --> G[Display Items]
-    G --> H[User Selects Items]
-    H --> I[Download Selected]
-    I --> J[Save to Output]
-    J --> K[Next Query/End]
-    E -- No --> L[Direct Search & Download]
-    L --> M[Download Items]
-    M --> J
-    D --> K
+    A["User Executes media_downloader_tool.py with Args"] --> B{"Parse CLI Arguments"};
+    B --> C{"Load Queries (Direct or from File)"};
+    C --> D["Loop Through Each Query"];
+    D --> E{"Interactive Mode?"};
+    E -- Yes --> F["Fetch Media List from Platforms (list_X_media returns dict with items/error/status)"];
+    F --> G["Display Found Items to User (from items list in dict)"];
+    G --> H["User Selects Items"];
+    H --> I["Download Selected Items (using download_selected_item)"];
+    I --> J["Save to Output Directory"];
+    J --> K["Next Query or End"];
+    E -- No --> L["Call Direct Search & Download Functions (search_X_media)"];
+    L -- "search_X_media calls list_X_media internally" --> L_sub["Processes items/errors/status from dict for CLI output"];
+    L_sub --> M["Download Items Directly (if items found & no critical error)"];
+    M --> J;
+    D -- "No More Queries" --> K;
 ```
 
 ### Web Interface Workflow (Flask App)
 
 ```mermaid
 graph TD
-    subgraph User_Browser["User Browser"]
-        U1[Visit /]
-        U2[Submit Search Form]
-        U3[Click Download Button]
+    subgraph "User Browser"
+        U1["User Navigates to / URL"]
+        U2["User Submits Search Form to /search"]
+        U3["User Clicks Download Button on /results"]
     end
 
-    subgraph Flask_Server["Flask Server (app.py)"]
-        S1[Route: / - Render index.html]
-        S2[Route: /search - Handle Form]
-        S3[Route: /download - Handle Download]
-        
-        S2 --> S2A[Call list_X_media]
-        S2A --> S2B[Render results.html]
-        S3 --> S3A[Call download_selected_item]
-        S3A --> S3B[Save File]
-        S3B --> S3C[Serve File]
+    subgraph "Flask Server (app.py)"
+        S1["Route: / - Renders index.html (shows API key warnings)"]
+        S2["Route: /search - Handles Form"]
+        S3["Route: /download - Handles Download Request"]
+
+        S2A["Call list_X_media for selected platforms (gets items/errors/status)"]
+        S2B["Render results.html with items & platform statuses"]
+
+        S3A["Call download_selected_item utility"]
+        S3B["File saved to server's download folder (instance/downloads)"]
+        S3C["Serve file using send_from_directory"]
     end
 
-    subgraph Downloader_Modules["Downloader Modules"]
-        DM1[list_X_media functions]
-        DM2[download_file utilities]
+    subgraph "Downloader Modules (API/Scraping)"
+        DM1["list_X_media functions (return dict with items, error, status)"]
+        DM2["download_file utilities (used by download_selected_item)"]
     end
 
-    U1 --> S1
-    U2 --> S2
-    S2A --> DM1
-    DM1 --> S2A
-    S2B --> U3
-    U3 --> S3
-    S3A --> DM2
-    DM2 --> S3B
-    S3C --> U3_File[File Downloaded]
+    U1 --> S1;
+    U2 --> S2;
+    S2 --> S2A;
+    S2A --> DM1;
+    DM1 --> S2A;
+    S2A --> S2B;
+    S2B --> U2_Results_PageDisplayed["User views results page with statuses"];
+
+    U2_Results_PageDisplayed -- "User clicks download" --> U3;
+    U3 --> S3;
+    S3 --> S3A;
+    S3A --> DM2;
+    DM2 --> S3B;
+    S3B --> S3C;
+    S3C --> U3_File_Downloaded["User receives downloaded file"];
 ```
 
 *(Diagrams are rendered by GitHub when viewing the README.md file.)*
