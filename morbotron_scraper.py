@@ -33,6 +33,9 @@ def download_file(url, folder_name, file_name, timeout=DEFAULT_DOWNLOAD_TIMEOUT)
         print(f"Error downloading {url} to {file_name}: {e}")
         return None
 
+# DEFAULT_API_TIMEOUT for consistency with other modules
+DEFAULT_API_TIMEOUT = 10
+
 def search_morbotron(query, limit=5, output_dir="morbotron_media", media_type="image",
                      api_timeout=DEFAULT_API_TIMEOUT, download_timeout=DEFAULT_DOWNLOAD_TIMEOUT): # Added api_timeout, download_timeout
     """
@@ -84,7 +87,7 @@ def list_morbotron_media(query, limit=25, media_type="image", api_timeout=DEFAUL
     }
 
     try:
-        response = requests.get(MORBOTRON_SEARCH_API_URL, params=params, headers=headers, timeout=timeout)
+        response = requests.get(MORBOTRON_SEARCH_API_URL, params=params, headers=headers, timeout=api_timeout)
         response.raise_for_status()
         results = response.json()
     except requests.exceptions.Timeout:

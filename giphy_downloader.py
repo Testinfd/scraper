@@ -2,7 +2,8 @@ import requests
 import os
 import argparse
 
-GIPHY_API_KEY = "YOUR_GIPHY_API_KEY_HERE"  # IMPORTANT: Replace with your Giphy API Key
+# Attempt to get API key from environment variable, otherwise use placeholder
+GIPHY_API_KEY = os.environ.get("GIPHY_API_KEY", "YOUR_GIPHY_API_KEY_HERE")
 GIPHY_SEARCH_URL = "https://api.giphy.com/v1/gifs/search"
 DEFAULT_DOWNLOAD_TIMEOUT = 10 # seconds
 

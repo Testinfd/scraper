@@ -5,13 +5,13 @@ import time
 
 # Import functions from existing downloader scripts
 from giphy_downloader import search_giphy, list_giphy_media, download_file as giphy_download_file, DEFAULT_DOWNLOAD_TIMEOUT as GIPHY_TIMEOUT
-from morbotron_downloader import search_morbotron, list_morbotron_media, download_file as morbotron_download_file, DEFAULT_DOWNLOAD_TIMEOUT as MORBOTRON_TIMEOUT
-from wikimedia_downloader import search_wikimedia, list_wikimedia_media, download_file as wikimedia_download_file, DEFAULT_DOWNLOAD_TIMEOUT as WIKIMEDIA_TIMEOUT
-from pixabay_downloader import search_pixabay_videos, list_pixabay_videos, download_file as pixabay_download_file, DEFAULT_DOWNLOAD_TIMEOUT as PIXABAY_TIMEOUT
-from frinkiac_downloader import search_frinkiac_media, list_frinkiac_media, download_file as frinkiac_download_file, DEFAULT_DOWNLOAD_TIMEOUT as FRINKIAC_TIMEOUT
-from mixkit_downloader import search_mixkit_videos, list_mixkit_videos, download_file as mixkit_download_file, DEFAULT_DOWNLOAD_TIMEOUT as MIXKIT_TIMEOUT
+from morbotron_scraper import search_morbotron, list_morbotron_media, download_file as morbotron_download_file, DEFAULT_DOWNLOAD_TIMEOUT as MORBOTRON_TIMEOUT
+from wikimedia_scraper import search_wikimedia, list_wikimedia_media, download_file as wikimedia_download_file, DEFAULT_DOWNLOAD_TIMEOUT as WIKIMEDIA_TIMEOUT
+from pixabay_scraper import search_pixabay_videos, list_pixabay_videos, download_file as pixabay_download_file, DEFAULT_DOWNLOAD_TIMEOUT as PIXABAY_TIMEOUT
+from frinkiac_scraper import search_frinkiac_media, list_frinkiac_media, download_file as frinkiac_download_file, DEFAULT_DOWNLOAD_TIMEOUT as FRINKIAC_TIMEOUT
+from mixkit_scraper import search_mixkit_videos, list_mixkit_videos, download_file as mixkit_download_file, DEFAULT_DOWNLOAD_TIMEOUT as MIXKIT_TIMEOUT
 # Comb.io is currently excluded
-# from comb_io_downloader import search_comb_io, list_comb_io_media, download_file as comb_io_download_file, DEFAULT_DOWNLOAD_TIMEOUT as COMBIO_TIMEOUT
+# from comb_io_scraper import search_comb_io, list_comb_io_media, download_file as comb_io_download_file, DEFAULT_DOWNLOAD_TIMEOUT as COMBIO_TIMEOUT
 
 SUPPORTED_PLATFORMS = ["giphy", "morbotron", "wikimedia", "pixabay", "frinkiac", "mixkit"]
 
