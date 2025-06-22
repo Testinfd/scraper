@@ -108,18 +108,41 @@ def search():
                 platform_results = list_mixkit_videos(query, limit_per_platform * 2, api_timeout=api_call_timeout)
             # else: print(f"WebUI: Mixkit skipped, wrong media type '{media_type}'")
         # elif platform == 'comb_io':
-            # platform_results = list_comb_io_media(query, limit_per_platform * 2, media_type, api_call_timeout)
+            # list_call_result = list_comb_io_media(query, limit_per_platform * 2, media_type, api_call_timeout)
 
-        all_results.extend(platform_results)
+        # Store structured results including errors/status
+        current_platform_data = {"platform_name": platform, "items": [], "error": None, "status_message": None}
+        if isinstance(platform_results, dict): # New return type
+            current_platform_data["items"] = platform_results.get("items", [])
+            current_platform_data["error"] = platform_results.get("error")
+            current_platform_data["status_message"] = platform_results.get("status_message")
+        elif isinstance(platform_results, list): # Old return type (fallback, should be phased out)
+             current_platform_data["items"] = platform_results
+
+        all_results.append(current_platform_data) # all_results is now a list of these dicts
+
+        # Only extend the flat list for display if items exist, for the old results.html compatibility (will change)
+        # For now, let's build a flat list for the results display, and a separate one for status
+        # This will be simplified when results.html is updated.
+        # flat_item_list.extend(current_platform_data["items"])
+
         time.sleep(0.5) # Small delay between platform API calls
 
     # Sanitize query for use as part of a directory name, if needed later for organizing downloads
     safe_query_name = "".join(c if c.isalnum() else "_" for c in query[:50]).strip('_') or "search"
 
+    # Consolidate all items from all platforms for display
+    display_items = []
+    for res_block in all_results:
+        display_items.extend(res_block.get('items', []))
+
+
     return render_template('results.html',
                            query=query,
-                           results=all_results[:limit_per_platform * len(selected_platforms)], # Global limit on displayed items
-                           limit_per_platform=limit_per_platform, # For information
+                           # results=flat_item_list[:limit_per_platform * len(selected_platforms)], # Old way
+                           results_data=all_results, # Pass the structured data
+                           display_items=display_items[:limit_per_platform * len(selected_platforms)], # Still limit overall display
+                           limit_per_platform=limit_per_platform,
                            safe_query_name=safe_query_name)
 
 

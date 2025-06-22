@@ -133,6 +133,34 @@
             font-size: 12px;
             margin-right: 5px;
         }
+        .platform-statuses {
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+        .platform-statuses h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #495057;
+        }
+        .platform-statuses ul {
+            list-style-type: none;
+            padding-left: 0;
+            margin-bottom: 0;
+        }
+        .platform-statuses li {
+            padding: 5px 0;
+            font-size: 14px;
+            border-bottom: 1px dashed #e9ecef;
+        }
+        .platform-statuses li:last-child {
+            border-bottom: none;
+        }
+        .status-error { color: #dc3545; font-weight: bold; }
+        .status-success { color: #28a745; }
+        .status-message { color: #6c757d; }
     </style>
 </head>
 <body>
@@ -141,9 +169,31 @@
         <h2>For query: "{{ query }}"</h2>
         <a href="{{ url_for('index') }}" class="nav-link">&larr; New Search</a>
 
-        {% if results %}
+        {% if results_data %}
+            <div class="platform-statuses">
+                <h4>Platform Search Status:</h4>
+                <ul>
+                    {% for platform_result in results_data %}
+                        <li>
+                            <strong>{{ platform_result.platform_name.title() }}:</strong>
+                            {% if platform_result.error %}
+                                <span class="status-error">Error: {{ platform_result.error }}</span>
+                            {% elif platform_result.status_message %}
+                                <span class="status-message">{{ platform_result.status_message }}</span>
+                            {% elif platform_result.items|length > 0 %}
+                                <span class="status-success">Found {{ platform_result.items|length }} item(s).</span>
+                            {% else %}
+                                <span class="status-message">No items found or specific status provided.</span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        {% if display_items %}
             <div class="result-grid">
-                {% for item in results %}
+                {% for item in display_items %} {# Iterate over the consolidated display_items #}
                 <div class="result-item">
                     <div> <!-- Content wrapper for flexbox -->
                         <h3>{{ item.title }}</h3>

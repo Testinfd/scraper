@@ -58,14 +58,17 @@ def list_pixabay_videos(query, list_limit=25, api_timeout=10, **kwargs):
         print(f"Timeout during Pixabay API request for query: {query}")
         return []
     except requests.exceptions.RequestException as e:
-        print(f"API request error for Pixabay query '{query}': {e}")
-        return []
+        # print(f"API request error for Pixabay query '{query}': {e}")
+        return {"items": [], "error": f"Pixabay: API request error for '{query[:50]}': {e}", "status_message": None}
     except json.JSONDecodeError:
-        print(f"Error decoding JSON from Pixabay: {response.text if 'response' in locals() else 'No response text'}")
-        return []
+        # print(f"Error decoding JSON from Pixabay: {response.text if 'response' in locals() else 'No response text'}")
+        return {"items": [], "error": f"Pixabay: Error decoding API response for '{query[:50]}'", "status_message": None}
+    except Exception as e: # Catch other potential errors
+        return {"items": [], "error": f"Pixabay: Unexpected error for '{query[:50]}': {e}", "status_message": None}
+
 
     if not data.get("hits"):
-        return []
+        return {"items": [], "error": None, "status_message": f"Pixabay: No results found for '{query[:50]}'"}
 
     found_items = []
     query_words = query.split()
@@ -117,22 +120,27 @@ def list_pixabay_videos(query, list_limit=25, api_timeout=10, **kwargs):
 
 
         })
-    return found_items
+    return {"items": found_items, "error": None, "status_message": None if found_items else f"Pixabay: No items extracted after processing hits for '{query[:50]}'"}
 
 def search_pixabay_videos(query, limit=5, output_dir="pixabay_media", api_timeout=10, download_timeout=DEFAULT_DOWNLOAD_TIMEOUT, **kwargs):
     """
     Searches Pixabay for videos and downloads them.
     """
-    # media_type is implicitly "video" here
+    listed_items_data = list_pixabay_videos(query, list_limit=limit, api_timeout=api_timeout)
+    listed_items = listed_items_data.get("items", [])
 
-    listed_items = list_pixabay_videos(query, list_limit=limit, api_timeout=api_timeout)
+    if listed_items_data.get("error"):
+        print(listed_items_data["error"])
+    elif not listed_items and listed_items_data.get("status_message"):
+        print(listed_items_data["status_message"])
+    elif not listed_items and not listed_items_data.get("error"):
+        print(f"Pixabay: No videos found or extracted for query '{query}'.")
 
     if not listed_items:
-        print(f"No videos found on Pixabay for query '{query}'.")
         return []
 
     downloaded_files = []
-    for i, item in enumerate(listed_items):
+    for i, item in enumerate(listed_items): # list is already limited by list_pixabay_videos logic
         if i >= limit: # Ensure we don't download more than 'limit'
             break
         print(f"Downloading Pixabay video: {item['title']} from {item['url']}")
