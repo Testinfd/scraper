@@ -10,6 +10,9 @@ This Python-based command-line tool allows you to search for and download media 
     *   Giphy (GIFs, Stickers, short Videos)
     *   Morbotron (TV Show Screencaps - e.g., The Simpsons, Futurama)
     *   Wikimedia Commons (Images, Videos, Audio)
+    *   Pixabay (Videos)
+    *   Frinkiac (The Simpsons Screencaps by Quote)
+    *   Mixkit (Stock Videos)
     *   (Potentially Comb.io - currently facing API issues)
 *   **Multiple Keyword Search**:
     *   Provide multiple search queries directly on the command line.
@@ -33,17 +36,31 @@ This Python-based command-line tool allows you to search for and download media 
 
 1.  **Clone the repository (if applicable) or download the script files.**
     *   `media_downloader_tool.py` (main script)
+    *   `app.py` (for the web interface)
+    *   `templates/` directory (with `index.html`, `results.html`)
     *   `giphy_downloader.py`
     *   `morbotron_downloader.py`
     *   `wikimedia_downloader.py`
+    *   `pixabay_downloader.py`
+    *   `frinkiac_downloader.py`
+    *   `mixkit_downloader.py`
     *   `comb_io_downloader.py` (optional, currently with issues)
 
-2.  **Giphy API Key (Required for Giphy)**:
-    *   To use Giphy, you need an API key. Visit the [Giphy Developers page](https://developers.giphy.com/) to create an app and get your API key.
-    *   Open `giphy_downloader.py` and replace the placeholder `"YOUR_GIPHY_API_KEY_HERE"` with your actual API key:
-        ```python
-        GIPHY_API_KEY = "YOUR_ACTUAL_GIPHY_API_KEY"
+2.  **API Keys**:
+    *   **Giphy (Required for Giphy)**:
+        *   Visit the [Giphy Developers page](https://developers.giphy.com/) to get an API key.
+        *   Open `giphy_downloader.py` and set `GIPHY_API_KEY = "YOUR_ACTUAL_GIPHY_API_KEY"`.
+    *   **Pixabay (Required for Pixabay)**:
+        *   Visit [Pixabay API page](https://pixabay.com/api/docs/) and get an API key.
+        *   Open `pixabay_downloader.py` and set `PIXABAY_API_KEY = "YOUR_ACTUAL_PIXABAY_API_KEY"`.
+    *   Frinkiac and Mixkit downloaders currently use publicly observable (but potentially unstable) endpoints and do not require API keys.
+
+3.  **Flask for Web Interface (Optional)**:
+    *   If you want to use the web interface, you'll need Flask:
+        ```bash
+        pip install Flask
         ```
+    *   Run the web app using: `python app.py`. It will typically be available at `http://127.0.0.1:5000`.
 
 ## Usage
 
@@ -59,8 +76,8 @@ python media_downloader_tool.py [queries...] --platforms <platform_names...> [op
     *   Example: `"funny cat"` `dog`
 
 *   `--platforms <platform_names...>` (required): A list of platforms to search.
-    *   Choices: `giphy`, `morbotron`, `wikimedia`
-    *   Example: `--platforms giphy wikimedia`
+    *   Choices: `giphy`, `morbotron`, `wikimedia`, `pixabay`, `frinkiac`, `mixkit`
+    *   Example: `--platforms giphy wikimedia pixabay`
 
 ### Options
 
@@ -155,9 +172,13 @@ Downloaded media will be saved in the following structure:
 ## Future Enhancements (Potential)
 
 *   **Comb.io Integration**: Resolve API access issues to re-enable Comb.io.
-*   **Web Interface**: A simple web UI for easier searching and downloading (would require additional libraries like Flask/Streamlit and different deployment).
-*   **Advanced Filtering**: More granular filtering options (e.g., by image size, video duration - if APIs support it).
-*   **Configuration File**: For API keys and default settings.
+*   **Web Interface Enhancements**:
+    *   More advanced filtering and sorting options directly in the UI.
+    *   User accounts or persistent settings.
+    *   Improved asynchronous operations for searching and downloading to prevent UI blocking.
+    *   Direct feedback on the page for download status.
+*   **Advanced Media Filtering**: More granular filtering options for CLI and Web (e.g., by image size, video duration - if APIs support it).
+*   **Configuration File**: For API keys and default settings for CLI.
 *   **Unit Tests**: For increased reliability.
 
 ## Contributing

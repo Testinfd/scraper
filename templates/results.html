@@ -5,71 +5,194 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Search Results for "{{ query }}"</title>
     <style>
-        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
-        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        h1, h2 { color: #333; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px; /* Add padding around the page */
+            background-color: #f0f2f5;
+            color: #1c1e21;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 25px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-width: 900px; /* Wider container for results */
+            margin: 0 auto; /* Center container */
+            box-sizing: border-box;
+        }
+        h1 {
+            color: #1877f2;
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 28px;
+        }
+         h2 {
+            color: #606770;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 18px;
+            font-weight: normal;
+        }
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Responsive grid */
+            gap: 20px;
+        }
         .result-item {
-            border: 1px solid #ddd; border-radius: 4px; padding: 15px; margin-bottom: 15px;
+            border: 1px solid #ccd0d5;
+            border-radius: 8px;
+            padding: 15px;
             background-color: #f9f9f9;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* Pushes button to bottom */
+            transition: box-shadow 0.2s ease;
         }
-        .result-item h3 { margin-top: 0; }
-        .result-item p { margin: 5px 0; }
-        .result-item img, .result-item video, .result-item audio { max-width: 300px; max-height: 200px; display: block; margin-top: 10px; border-radius: 4px;}
+        .result-item:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .result-item h3 {
+            margin-top: 0;
+            margin-bottom: 8px;
+            font-size: 16px;
+            color: #1c1e21;
+            /* Truncate long titles */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .result-item p {
+            margin: 4px 0;
+            font-size: 13px;
+            color: #606770;
+        }
+        .result-item .media-preview {
+            width: 100%;
+            height: 180px; /* Fixed height for previews */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #e4e6eb;
+            border-radius: 6px;
+            overflow: hidden; /* Ensure content fits */
+            margin-bottom: 10px;
+        }
+        .result-item img, .result-item video, .result-item audio {
+            max-width: 100%;
+            max-height: 100%;
+            display: block;
+            border-radius: 4px; /* Slight rounding for media itself */
+        }
+         .result-item audio { /* Specific styling for audio player if needed */
+            width: 100%;
+        }
+
         .download-form button {
-            background-color: #28a745; color: white; padding: 8px 12px; border: none;
-            border-radius: 4px; cursor: pointer; font-size: 14px; margin-top:10px;
+            background-color: #42b72a; /* Green for download */
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 12px;
+            width: 100%;
+            transition: background-color 0.2s ease;
         }
-        .download-form button:hover { background-color: #218838; }
-        a { color: #007bff; text-decoration: none; }
-        a:hover { text-decoration: underline; }
-        .no-results { font-style: italic; color: #777;}
+        .download-form button:hover {
+            background-color: #36a420;
+        }
+        .nav-link {
+            display: inline-block; /* Correctly size the link */
+            background-color: #e4e6eb;
+            color: #1c1e21;
+            padding: 10px 15px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+            margin-bottom: 25px;
+        }
+        .nav-link:hover {
+            background-color: #d8dadf;
+        }
+        .no-results {
+            font-style: italic;
+            color: #606770;
+            text-align: center;
+            padding: 20px;
+            font-size: 16px;
+        }
+        .item-details span { /* For platform/type badges */
+            background-color: #e7f3ff;
+            color: #1877f2;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Search Results for "{{ query }}"</h1>
-        <p><a href="{{ url_for('index') }}">New Search</a></p>
+        <h1>Search Results</h1>
+        <h2>For query: "{{ query }}"</h2>
+        <a href="{{ url_for('index') }}" class="nav-link">&larr; New Search</a>
 
         {% if results %}
-            <h2>Found {{ results|length }} items (displaying up to {{ limit_per_platform }} per platform):</h2>
-            {% for item in results %}
-            <div class="result-item">
-                <h3>{{ item.title }}</h3>
-                <p><strong>Platform:</strong> {{ item.platform.title() }}</p>
-                <p><strong>Type:</strong> {{ item.type }}</p>
-                <p><strong>Source URL:</strong> <a href="{{ item.url }}" target="_blank">Link</a></p>
-                <p><strong>Suggested Filename:</strong> {{ item.filename }}</p>
+            <div class="result-grid">
+                {% for item in results %}
+                <div class="result-item">
+                    <div> <!-- Content wrapper for flexbox -->
+                        <h3>{{ item.title }}</h3>
+                        <p class="item-details">
+                            <span>{{ item.platform.title() }}</span>
+                            <span>{{ item.type.title() }}</span>
+                        </p>
+                        <p><strong>Filename:</strong> {{ item.filename }}</p>
 
-                {% if item.type == 'image' or item.type == 'gif' or item.type == 'sticker' %}
-                    <img src="{{ item.url }}" alt="{{ item.title }}">
-                {% elif item.type == 'video' %}
-                    <video controls width="300">
-                        <source src="{{ item.url }}" type="video/mp4"> <!-- Common case, might need more specific type based on item.filename extension -->
-                        Your browser does not support the video tag.
-                    </video>
-                {% elif item.type == 'audio' %}
-                     <audio controls>
-                        <source src="{{ item.url }}" type="audio/mpeg"> <!-- Common case -->
-                        Your browser does not support the audio element.
-                    </audio>
-                {% endif %}
-
-                <form class="download-form" action="{{ url_for('download') }}" method="POST" target="_blank">
-                    <input type="hidden" name="url" value="{{ item.url }}">
-                    <input type="hidden" name="filename" value="{{ item.filename }}">
-                    <input type="hidden" name="platform" value="{{ item.platform }}">
-                    <input type="hidden" name="title" value="{{ item.title }}">
-                    <input type="hidden" name="type" value="{{ item.type }}">
-                    <input type="hidden" name="query_context_dir" value="{{ safe_query_name }}">
-                    <button type="submit">Download this item</button>
-                </form>
+                        <div class="media-preview">
+                        {% if item.preview_image_url and (item.type == 'video' or item.type == 'audio') %}
+                             <img src="{{ item.preview_image_url }}" alt="Preview for {{ item.title }}">
+                        {% elif item.type == 'image' or item.type == 'gif' or item.type == 'sticker' %}
+                            <img src="{{ item.url }}" alt="{{ item.title }}">
+                        {% elif item.type == 'video' %}
+                            <video controls>
+                                <source src="{{ item.url }}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        {% elif item.type == 'audio' %}
+                             <audio controls>
+                                <source src="{{ item.url }}" type="audio/mpeg">
+                                Your browser does not support the audio element.
+                            </audio>
+                        {% else %}
+                            <p>No preview available.</p>
+                        {% endif %}
+                        </div>
+                        <p><small>Source: <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer">Link</a></small></p>
+                    </div>
+                    <form class="download-form" action="{{ url_for('download') }}" method="POST" target="_blank">
+                        <input type="hidden" name="url" value="{{ item.url }}">
+                        <input type="hidden" name="filename" value="{{ item.filename }}">
+                        <input type="hidden" name="platform" value="{{ item.platform }}">
+                        <input type="hidden" name="title" value="{{ item.title }}">
+                        <input type="hidden" name="type" value="{{ item.type }}">
+                        <input type="hidden" name="query_context_dir" value="{{ safe_query_name }}">
+                        <button type="submit">Download Item</button>
+                    </form>
+                </div>
+                {% endfor %}
             </div>
-            {% endfor %}
         {% else %}
             <p class="no-results">No media items found for your query "{{ query }}" with the selected criteria.</p>
         {% endif %}
 
-        <p><a href="{{ url_for('index') }}">New Search</a></p>
+        <div style="text-align: center; margin-top: 30px;">
+             <a href="{{ url_for('index') }}" class="nav-link">&larr; New Search</a>
+        </div>
     </div>
 </body>
 </html>

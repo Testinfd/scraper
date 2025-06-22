@@ -17,6 +17,9 @@ from media_downloader_tool import (
 from giphy_downloader import list_giphy_media, GIPHY_API_KEY, DEFAULT_DOWNLOAD_TIMEOUT as GIPHY_TIMEOUT
 from morbotron_downloader import list_morbotron_media, DEFAULT_DOWNLOAD_TIMEOUT as MORBOTRON_TIMEOUT
 from wikimedia_downloader import list_wikimedia_media, DEFAULT_DOWNLOAD_TIMEOUT as WIKIMEDIA_TIMEOUT
+from pixabay_downloader import list_pixabay_videos, PIXABAY_API_KEY, DEFAULT_DOWNLOAD_TIMEOUT as PIXABAY_TIMEOUT
+from frinkiac_downloader import list_frinkiac_media, DEFAULT_DOWNLOAD_TIMEOUT as FRINKIAC_TIMEOUT
+from mixkit_downloader import list_mixkit_videos, DEFAULT_DOWNLOAD_TIMEOUT as MIXKIT_TIMEOUT
 # from comb_io_downloader import list_comb_io_media # If it becomes available
 
 app = Flask(__name__)
@@ -36,19 +39,24 @@ def get_platform_default_timeout(platform):
     if platform == "giphy": return GIPHY_TIMEOUT
     if platform == "morbotron": return MORBOTRON_TIMEOUT
     if platform == "wikimedia": return WIKIMEDIA_TIMEOUT
+    if platform == "pixabay": return PIXABAY_TIMEOUT
+    if platform == "frinkiac": return FRINKIAC_TIMEOUT
+    if platform == "mixkit": return MIXKIT_TIMEOUT
     # if platform == "comb_io": return COMBIO_TIMEOUT # Placeholder
     return 10 # Generic default
 
 @app.route('/', methods=['GET'])
 def index():
+    warnings = []
     if GIPHY_API_KEY == "YOUR_GIPHY_API_KEY_HERE":
-        giphy_warning = "Giphy API key is not set. Giphy searches will not work. Please set it in giphy_downloader.py."
-    else:
-        giphy_warning = None
+        warnings.append("Giphy API key is not set in giphy_downloader.py. Giphy searches will not work.")
+    if PIXABAY_API_KEY == "YOUR_PIXABAY_API_KEY_HERE":
+        warnings.append("Pixabay API key is not set in pixabay_downloader.py. Pixabay searches will not work.")
+
     return render_template('index.html',
-                           platforms=SUPPORTED_PLATFORMS,
+                           platforms=SUPPORTED_PLATFORMS, # SUPPORTED_PLATFORMS from media_downloader_tool.py will have all
                            media_types=["all", "image", "gif", "video", "audio", "sticker"],
-                           giphy_warning=giphy_warning)
+                           warnings=warnings if warnings else None)
 
 @app.route('/search', methods=['POST'])
 def search():
@@ -76,13 +84,29 @@ def search():
         if platform == 'giphy':
             if GIPHY_API_KEY != "YOUR_GIPHY_API_KEY_HERE":
                 platform_results = list_giphy_media(query, limit_per_platform * 2, media_type, api_call_timeout)
+            else:
+                print("Skipping Giphy search in web UI: API key not set.")
         elif platform == 'morbotron':
-             # Morbotron is image only mostly
             mt = "image" if media_type not in ["image", "all"] else media_type
             if media_type == "all" or media_type == "image":
                 platform_results = list_morbotron_media(query, limit_per_platform * 2, mt, api_call_timeout)
         elif platform == 'wikimedia':
             platform_results = list_wikimedia_media(query, limit_per_platform * 2, media_type, api_call_timeout)
+        elif platform == 'pixabay':
+            if PIXABAY_API_KEY != "YOUR_PIXABAY_API_KEY_HERE":
+                if media_type == "all" or media_type == "video":
+                    platform_results = list_pixabay_videos(query, limit_per_platform * 2, api_timeout=api_call_timeout)
+                # else: print(f"WebUI: Pixabay skipped, wrong media type '{media_type}'")
+            else:
+                print("Skipping Pixabay search in web UI: API key not set.")
+        elif platform == 'frinkiac':
+            if media_type == "all" or media_type == "image": # Frinkiac is image specific
+                platform_results = list_frinkiac_media(query, limit_per_platform * 2, api_timeout=api_call_timeout)
+            # else: print(f"WebUI: Frinkiac skipped, wrong media type '{media_type}'")
+        elif platform == 'mixkit':
+            if media_type == "all" or media_type == "video": # Mixkit is video specific (for this downloader)
+                platform_results = list_mixkit_videos(query, limit_per_platform * 2, api_timeout=api_call_timeout)
+            # else: print(f"WebUI: Mixkit skipped, wrong media type '{media_type}'")
         # elif platform == 'comb_io':
             # platform_results = list_comb_io_media(query, limit_per_platform * 2, media_type, api_call_timeout)
 
