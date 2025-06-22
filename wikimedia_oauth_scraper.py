@@ -8,7 +8,7 @@ DEFAULT_DOWNLOAD_TIMEOUT = 15
 DEFAULT_API_TIMEOUT = 10 # Default for API calls
 
 # Provided OAuth 2.0 Access Token
-WIKIMEDIA_ACCESS_TOKEN = "YOUR_API_KEY_HERE"
+WIKIMEDIA_ACCESS_TOKEN = "YOUR_ACCESS_TOKEN_HERE"
 
 def _get_auth_headers():
     """Returns headers for authenticated Wikimedia API requests."""
