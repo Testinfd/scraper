@@ -10,10 +10,11 @@ from wikimedia_scraper import search_wikimedia, list_wikimedia_media, download_f
 from pixabay_scraper import search_pixabay_videos, list_pixabay_videos, download_file as pixabay_download_file, DEFAULT_DOWNLOAD_TIMEOUT as PIXABAY_TIMEOUT
 from frinkiac_scraper import search_frinkiac_media, list_frinkiac_media, download_file as frinkiac_download_file, DEFAULT_DOWNLOAD_TIMEOUT as FRINKIAC_TIMEOUT
 from mixkit_scraper import search_mixkit_videos, list_mixkit_videos, download_file as mixkit_download_file, DEFAULT_DOWNLOAD_TIMEOUT as MIXKIT_TIMEOUT
+from wikimedia_oauth_scraper import search_wikimedia_oauth_media, list_wikimedia_oauth_media, download_file as wikimedia_oauth_download_file, DEFAULT_DOWNLOAD_TIMEOUT as WIKIMEDIA_OAUTH_TIMEOUT
 # Comb.io is currently excluded
 # from comb_io_scraper import search_comb_io, list_comb_io_media, download_file as comb_io_download_file, DEFAULT_DOWNLOAD_TIMEOUT as COMBIO_TIMEOUT
 
-SUPPORTED_PLATFORMS = ["giphy", "morbotron", "wikimedia", "pixabay", "frinkiac", "mixkit"]
+SUPPORTED_PLATFORMS = ["giphy", "morbotron", "wikimedia", "wikimedia_oauth", "pixabay", "frinkiac", "mixkit"]
 
 
 # Generic download function for interactive mode, using platform-specific downloaders
@@ -37,6 +38,7 @@ def download_selected_item(item, base_output_dir, download_timeout_override=None
         if item['platform'] == 'giphy': actual_timeout = GIPHY_TIMEOUT
         elif item['platform'] == 'morbotron': actual_timeout = MORBOTRON_TIMEOUT
         elif item['platform'] == 'wikimedia': actual_timeout = WIKIMEDIA_TIMEOUT
+        elif item['platform'] == 'wikimedia_oauth': actual_timeout = WIKIMEDIA_OAUTH_TIMEOUT
         elif item['platform'] == 'pixabay': actual_timeout = PIXABAY_TIMEOUT
         elif item['platform'] == 'frinkiac': actual_timeout = FRINKIAC_TIMEOUT
         elif item['platform'] == 'mixkit': actual_timeout = MIXKIT_TIMEOUT
@@ -47,6 +49,7 @@ def download_selected_item(item, base_output_dir, download_timeout_override=None
     if item['platform'] == 'giphy': downloader_function = giphy_download_file
     elif item['platform'] == 'morbotron': downloader_function = morbotron_download_file
     elif item['platform'] == 'wikimedia': downloader_function = wikimedia_download_file
+    elif item['platform'] == 'wikimedia_oauth': downloader_function = wikimedia_oauth_download_file
     elif item['platform'] == 'pixabay': downloader_function = pixabay_download_file
     elif item['platform'] == 'frinkiac': downloader_function = frinkiac_download_file
     elif item['platform'] == 'mixkit': downloader_function = mixkit_download_file
@@ -173,6 +176,8 @@ def main():
                      all_found_media_items.extend(list_morbotron_media(current_query, args.limit * 2, mt, args.api_call_timeout))
             if "wikimedia" in args.platforms:
                 all_found_media_items.extend(list_wikimedia_media(current_query, args.limit * 2, args.media_type, args.api_call_timeout))
+            if "wikimedia_oauth" in args.platforms:
+                all_found_media_items.extend(list_wikimedia_oauth_media(current_query, args.limit * 2, args.media_type, args.api_call_timeout))
             if "pixabay" in args.platforms:
                 # Pixabay downloader currently only supports video type via its video API
                 if args.media_type == "all" or args.media_type == "video":
@@ -275,6 +280,18 @@ def main():
                     if downloaded_count: print(f"Wikimedia: Downloaded {len(downloaded_count)} files.")
                     else: print(f"Wikimedia: No files downloaded for '{current_query}'.")
                 except Exception as e: print(f"Wikimedia Error: {e}")
+                print("-" * 20 + "\n"); time.sleep(1)
+
+            if "wikimedia_oauth" in args.platforms:
+                print("-" * 20)
+                print(f"Processing Wikimedia OAuth for '{current_query}'...")
+                wikimedia_oauth_output_subdir = os.path.join(query_specific_output_dir, "wikimedia_oauth")
+                try:
+                    m_type = args.media_type if args.media_type != "sticker" else "all" # Wikimedia supports various types
+                    downloaded_count = search_wikimedia_oauth_media(current_query, args.limit, wikimedia_oauth_output_subdir, m_type, args.api_call_timeout, args.download_timeout or WIKIMEDIA_OAUTH_TIMEOUT)
+                    if downloaded_count: print(f"Wikimedia OAuth: Downloaded {len(downloaded_count)} files.")
+                    else: print(f"Wikimedia OAuth: No files downloaded for '{current_query}'.")
+                except Exception as e: print(f"Wikimedia OAuth Error: {e}")
                 print("-" * 20 + "\n"); time.sleep(1)
 
             if "pixabay" in args.platforms:
