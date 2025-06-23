@@ -180,8 +180,8 @@
                                 <span class="status-error">Error: {{ platform_result.error }}</span>
                             {% elif platform_result.status_message %}
                                 <span class="status-message">{{ platform_result.status_message }}</span>
-                            {% elif platform_result.items|length > 0 %}
-                                <span class="status-success">Found {{ platform_result.items|length }} item(s).</span>
+                            {% elif platform_result['items']|length > 0 %}
+                                <span class="status-success">Found {{ platform_result['items']|length }} item(s).</span>
                             {% else %}
                                 <span class="status-message">No items found or specific status provided.</span>
                             {% endif %}
