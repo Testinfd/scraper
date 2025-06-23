@@ -79,22 +79,25 @@ def list_pixabay_videos(query, list_limit=25, api_timeout=10, **kwargs):
         videos_data = hit.get("videos", {})
         chosen_video_rendition = None
         size_bytes = None
+        video_thumbnail_url = None
 
-        # Prefer medium quality, fallback to large, then small, and get its size.
-        if videos_data.get("medium", {}).get("url"):
-            chosen_video_rendition = videos_data["medium"]
-        elif videos_data.get("large", {}).get("url"):
-            chosen_video_rendition = videos_data["large"]
-        elif videos_data.get("small", {}).get("url"):
-            chosen_video_rendition = videos_data["small"]
+        # Prefer medium quality, fallback to large, then small, and get its size and thumbnail.
+        # Order of preference for rendition: medium, large, small, tiny
+        preferred_renditions = ["medium", "large", "small", "tiny"]
+        for rendition_key in preferred_renditions:
+            rendition_data = videos_data.get(rendition_key)
+            if rendition_data and rendition_data.get("url"):
+                chosen_video_rendition = rendition_data
+                break
 
         if not chosen_video_rendition:
             continue
 
         video_url = chosen_video_rendition.get("url")
         size_bytes = chosen_video_rendition.get("size")
+        video_thumbnail_url = chosen_video_rendition.get("thumbnail")
 
-        if not video_url: # Should not happen if chosen_video_rendition is set
+        if not video_url: # Should not happen if chosen_video_rendition is set by now
             continue
 
         item_id = hit.get("id")
@@ -116,7 +119,7 @@ def list_pixabay_videos(query, list_limit=25, api_timeout=10, **kwargs):
             "filename": final_filename,
             "platform": "pixabay",
             "size_bytes": size_bytes, # Add the size
-            "preview_image_url": f"https://i.vimeocdn.com/video/{hit.get('picture_id')}.jpg" if hit.get('picture_id') else None
+            "preview_image_url": video_thumbnail_url # Use the correct thumbnail URL
         })
     return {"items": found_items, "error": None, "status_message": None if found_items else f"Pixabay: No items extracted after processing hits for '{query[:50]}'"}
 
