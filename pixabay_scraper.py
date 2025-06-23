@@ -81,8 +81,7 @@ def list_pixabay_videos(query, list_limit=25, api_timeout=10, **kwargs):
         size_bytes = None
         video_thumbnail_url = None
 
-        # Prefer medium quality, fallback to large, then small, and get its size and thumbnail.
-        # Order of preference for rendition: medium, large, small, tiny
+        # Prefer medium quality, fallback to large, then small, then tiny, and get its size and thumbnail.
         preferred_renditions = ["medium", "large", "small", "tiny"]
         for rendition_key in preferred_renditions:
             rendition_data = videos_data.get(rendition_key)
@@ -95,7 +94,7 @@ def list_pixabay_videos(query, list_limit=25, api_timeout=10, **kwargs):
 
         video_url = chosen_video_rendition.get("url")
         size_bytes = chosen_video_rendition.get("size")
-        video_thumbnail_url = chosen_video_rendition.get("thumbnail")
+        video_thumbnail_url = chosen_video_rendition.get("thumbnail") # Get thumbnail from the chosen rendition
 
         if not video_url: # Should not happen if chosen_video_rendition is set by now
             continue
