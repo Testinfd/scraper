@@ -76,17 +76,25 @@ def list_pixabay_videos(query, list_limit=25, api_timeout=10, **kwargs):
     smart_query_name_base = "".join(c if c.isalnum() else "_" for c in smart_query_name_base).strip('_')
 
     for hit in data["hits"][:list_limit]: # Apply overall list_limit after fetching per_page
-        video_info = hit.get("videos", {})
-        # Prefer medium quality, fallback to large, then small.
-        video_url = None
-        if video_info.get("medium", {}).get("url"):
-            video_url = video_info["medium"]["url"]
-        elif video_info.get("large", {}).get("url"):
-            video_url = video_info["large"]["url"]
-        elif video_info.get("small", {}).get("url"):
-            video_url = video_info["small"]["url"]
+        videos_data = hit.get("videos", {})
+        chosen_video_rendition = None
+        size_bytes = None
 
-        if not video_url:
+        # Prefer medium quality, fallback to large, then small, and get its size.
+        if videos_data.get("medium", {}).get("url"):
+            chosen_video_rendition = videos_data["medium"]
+        elif videos_data.get("large", {}).get("url"):
+            chosen_video_rendition = videos_data["large"]
+        elif videos_data.get("small", {}).get("url"):
+            chosen_video_rendition = videos_data["small"]
+
+        if not chosen_video_rendition:
+            continue
+
+        video_url = chosen_video_rendition.get("url")
+        size_bytes = chosen_video_rendition.get("size")
+
+        if not video_url: # Should not happen if chosen_video_rendition is set
             continue
 
         item_id = hit.get("id")
@@ -107,16 +115,7 @@ def list_pixabay_videos(query, list_limit=25, api_timeout=10, **kwargs):
             "type": "video", # Pixabay video endpoint returns videos
             "filename": final_filename,
             "platform": "pixabay",
-            # The following complex comment block was causing a syntax error and the key was redefined.
-            # "preview_image_url": hit.get("picture_id") # This is just an ID, not full URL. Actual preview: `https://i.vimeocdn.com/video/{picture_id}_295x166.jpg` but this is for Vimeo.
-                                                     # Pixabay API gives direct preview image in `userImageURL` for user, or `webformatURL` for image search.
-                                                     # For videos, the preview is often part of the video player, not a direct image URL in API.
-                                                     # The video object itself contains `picture_id`.
-                                                     # The actual preview URL seems to be `https://i.vimeocdn.com/video/[picture_id]_1920x1080.jpg` (example)
-                                                     # Let's use a generic placeholder or the video URL itself for preview for now.
-                                                     # Pixabay's own site uses a URL like: https://cdn.pixabay.com/vimeo/{VIMEO_VIDEO_ID_from_page_url}/?Expires=...&Key-Pair-Id=...&Signature=...
-                                                     # The API provides `picture_id` which seems to be a vimeo thumbnail id.
-                                                     # Example: "picture_id": "7110920_1920" -> https://i.vimeocdn.com/video/7110920_1920.jpg (this structure might work)
+            "size_bytes": size_bytes, # Add the size
             "preview_image_url": f"https://i.vimeocdn.com/video/{hit.get('picture_id')}.jpg" if hit.get('picture_id') else None
         })
     return {"items": found_items, "error": None, "status_message": None if found_items else f"Pixabay: No items extracted after processing hits for '{query[:50]}'"}

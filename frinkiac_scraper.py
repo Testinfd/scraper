@@ -5,6 +5,21 @@ import argparse
 import json # Still useful for structured data, though not for API responses
 import re
 
+# Attempt to import the helper function. If this script is run standalone, this might fail.
+try:
+    from media_downloader_tool import get_remote_file_size
+except ImportError:
+    # Fallback for standalone execution or if media_downloader_tool is not in PYTHONPATH
+    def get_remote_file_size(url, timeout=5):
+        # print(f"Warning: Using fallback get_remote_file_size for {url}")
+        try:
+            response = requests.head(url, timeout=timeout, allow_redirects=True)
+            response.raise_for_status()
+            content_length = response.headers.get('Content-Length')
+            return int(content_length) if content_length else None
+        except Exception: # Broad exception for fallback
+            return None
+
 # Frinkiac base URL.
 FRINKIAC_BASE_URL = "https://frinkiac.com"
 
@@ -117,6 +132,8 @@ def list_frinkiac_media(query_quote, list_limit=25, request_timeout=DEFAULT_REQU
         final_filename = f"frinkiac_{smart_query_name_base}_{item_id}{file_extension}"
         final_filename = "_".join(filter(None, final_filename.split('_')))
 
+        size_bytes = get_remote_file_size(image_url, timeout=request_timeout) # Use request_timeout for HEAD
+
         found_items.append({
             "id": item_id,
             "title": title,
@@ -127,7 +144,8 @@ def list_frinkiac_media(query_quote, list_limit=25, request_timeout=DEFAULT_REQU
             "episode": episode,
             "timestamp": timestamp,
             "subtitle": full_subtitle,
-            "preview_image_url": image_url # For image, preview is the image itself
+            "preview_image_url": image_url, # For image, preview is the image itself
+            "size_bytes": size_bytes
         })
 
     status_msg = None

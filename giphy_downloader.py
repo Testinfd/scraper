@@ -147,7 +147,7 @@ def list_giphy_media(query, limit=25, media_type="gif", timeout=DEFAULT_DOWNLOAD
     except requests.exceptions.RequestException as e:
         # print(f"API request error for Giphy query '{query}': {e}")
         return {"items": [], "error": f"Giphy: API request error for '{query[:50]}': {e}", "status_message": None}
-    except json.JSONDecodeError:
+    except requests.exceptions.JSONDecodeError: # Corrected exception type
         # print(f"Error decoding JSON from Giphy: {response.text if 'response' in locals() else 'No response text'}")
         return {"items": [], "error": f"Giphy: Error decoding API response for '{query[:50]}'", "status_message": None}
     except Exception as e: # Catch other potential errors
@@ -165,37 +165,77 @@ def list_giphy_media(query, limit=25, media_type="gif", timeout=DEFAULT_DOWNLOAD
     for item in data["data"]:
         item_id = item.get("id")
         title = item.get("title") or f"Giphy {item_id}"
+        images_data = item.get("images", {})
 
         media_item_url = None
-        file_extension = ".gif"
-        item_actual_media_type = "gif" # Giphy's 'type' field (gif, sticker, etc.)
+        file_extension = ".gif"  # Default
+        item_actual_media_type = "gif"  # Default
+        size_bytes = None
+        selected_rendition_key = None # To fetch size from the correct rendition
 
+        # Determine media type and URL, prioritize based on request
         if item.get("type") == "sticker" and (media_type == "sticker" or media_type == "all"):
-             media_item_url = item.get("images", {}).get("original", {}).get("url") # Stickers are usually gifs
-             file_extension = ".gif" # or could be webp sometimes
-             item_actual_media_type = "sticker"
+            selected_rendition_key = "original"
+            rendition_info = images_data.get(selected_rendition_key, {})
+            media_item_url = rendition_info.get("url")
+            size_bytes = rendition_info.get("size") # Sticker .gif often has 'size'
+            file_extension = ".gif" # Stickers are often GIFs
+            if "webp" in rendition_info and rendition_info.get("webp_size"): # Prefer webp if available and has size
+                # This logic can be expanded if webp is a distinct preferred type
+                pass
+            item_actual_media_type = "sticker"
+
         elif (media_type == "video" or media_type == "all"):
-            if item.get("images", {}).get("original_mp4", {}).get("mp4"):
-                media_item_url = item.get("images").get("original_mp4").get("mp4")
+            original_mp4_info = images_data.get("original_mp4", {})
+            hd_mp4_info = images_data.get("hd", {})  # Older format
+
+            if original_mp4_info.get("mp4"):
+                selected_rendition_key = "original_mp4"
+                media_item_url = original_mp4_info.get("mp4")
+                size_bytes = original_mp4_info.get("mp4_size")  # Specific key for mp4 size
                 file_extension = ".mp4"
                 item_actual_media_type = "video"
-            elif item.get("images", {}).get("hd", {}).get("mp4"):
-                 media_item_url = item.get("images").get("hd").get("mp4")
-                 file_extension = ".mp4"
-                 item_actual_media_type = "video"
+            elif hd_mp4_info.get("mp4"):  # Fallback to HD if original_mp4 not present
+                selected_rendition_key = "hd"
+                media_item_url = hd_mp4_info.get("mp4")
+                size_bytes = hd_mp4_info.get("size")  # HD might use generic 'size'
+                file_extension = ".mp4"
+                item_actual_media_type = "video"
 
         if not media_item_url and (media_type == "gif" or media_type == "all" or media_type == "image"):
-            media_item_url = item.get("images", {}).get("original", {}).get("url")
-            file_extension = ".gif"
-            item_actual_media_type = "gif"
-            if item.get("type") == "sticker": # if it's a sticker but gif was requested
-                item_actual_media_type = "sticker"
+            # Fallback to GIF if video not found/requested or sticker not primary
+            original_gif_info = images_data.get("original", {})
+            if original_gif_info.get("url"):
+                selected_rendition_key = "original"
+                media_item_url = original_gif_info.get("url")
+                size_bytes = original_gif_info.get("size")
+                file_extension = ".gif"
+                item_actual_media_type = "gif"
+                if item.get("type") == "sticker": # If it's a sticker but GIF was requested
+                    item_actual_media_type = "sticker" # Keep its original type designation
+
+        # Ensure size_bytes is integer if found as string
+        if size_bytes is not None:
+            try:
+                size_bytes = int(size_bytes)
+            except ValueError:
+                # print(f"Warning: Could not convert size '{size_bytes}' to int for Giphy item {item_id}")
+                size_bytes = None
+
+        # If size_bytes is still None and we have a selected_rendition_key, try 'size' field for that rendition
+        if size_bytes is None and selected_rendition_key:
+            rendition_data = images_data.get(selected_rendition_key, {})
+            if rendition_data.get("size"):
+                try:
+                    size_bytes = int(rendition_data.get("size"))
+                except ValueError:
+                    size_bytes = None
 
 
         if media_item_url:
             # Filter based on requested media_type vs what we found
             if media_type != "all":
-                if media_type == "gif" and item_actual_media_type not in ["gif", "sticker"]: # sticker can be a gif
+                if media_type == "gif" and item_actual_media_type not in ["gif", "sticker"]:
                     continue
                 if media_type == "sticker" and item_actual_media_type != "sticker":
                     continue
@@ -207,9 +247,10 @@ def list_giphy_media(query, limit=25, media_type="gif", timeout=DEFAULT_DOWNLOAD
                 "id": item_id,
                 "title": title,
                 "url": media_item_url,
-                "type": item_actual_media_type, # gif, video, sticker
+                "type": item_actual_media_type,  # gif, video, sticker
                 "filename": file_name,
-                "platform": "giphy"
+                "platform": "giphy",
+                "size_bytes": size_bytes # Add the size
             })
     return {"items": found_items, "error": None, "status_message": None if found_items else f"Giphy: No items matched criteria for '{query[:50]}'"}
 

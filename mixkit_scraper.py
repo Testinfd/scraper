@@ -5,6 +5,21 @@ import argparse
 import json
 import re # For extracting JSON from script tags
 
+# Attempt to import the helper function. If this script is run standalone, this might fail.
+try:
+    from media_downloader_tool import get_remote_file_size
+except ImportError:
+    # Fallback for standalone execution or if media_downloader_tool is not in PYTHONPATH
+    def get_remote_file_size(url, timeout=5):
+        # print(f"Warning: Using fallback get_remote_file_size for {url}")
+        try:
+            response = requests.head(url, timeout=timeout, allow_redirects=True)
+            response.raise_for_status()
+            content_length = response.headers.get('Content-Length')
+            return int(content_length) if content_length else None
+        except Exception: # Broad exception for fallback
+            return None
+
 MIXKIT_BASE_URL = "https://mixkit.co"
 # Search URL structure: https://mixkit.co/free-stock-video/search/?q=nature
 
@@ -130,6 +145,12 @@ def list_mixkit_videos(query, list_limit=25, request_timeout=DEFAULT_REQUEST_TIM
                     if not preview_image_url and item_data.get("poster_url"): # another common key
                         preview_image_url = item_data.get("poster_url")
 
+                    size_bytes = item_data.get("size_bytes") # Check if size is directly in JSON
+                    if size_bytes is None and 'metadata' in item_data and item_data['metadata'].get('size_bytes'):
+                        size_bytes = item_data['metadata']['size_bytes']
+
+                    if size_bytes is None: # Fallback to HEAD request if not in JSON
+                        size_bytes = get_remote_file_size(video_url, timeout=request_timeout)
 
                     found_items.append({
                         "id": item_id,
@@ -139,7 +160,8 @@ def list_mixkit_videos(query, list_limit=25, request_timeout=DEFAULT_REQUEST_TIM
                         "filename": final_filename,
                         "platform": "mixkit",
                         "preview_image_url": preview_image_url,
-                        "description": item_data.get("description_text", item_data.get("description", ""))
+                        "description": item_data.get("description_text", item_data.get("description", "")),
+                        "size_bytes": size_bytes
                     })
         except (json.JSONDecodeError, KeyError, TypeError) as e:
             print(f"Error parsing Mixkit JSON data from <script id='__NEXT_DATA__'>: {e}")

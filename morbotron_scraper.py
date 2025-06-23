@@ -2,6 +2,20 @@ import requests
 import os
 import argparse
 import json
+# Attempt to import the helper function. If this script is run standalone, this might fail.
+try:
+    from media_downloader_tool import get_remote_file_size
+except ImportError:
+    # Fallback for standalone execution or if media_downloader_tool is not in PYTHONPATH
+    def get_remote_file_size(url, timeout=5):
+        # print(f"Warning: Using fallback get_remote_file_size for {url}")
+        try:
+            response = requests.head(url, timeout=timeout, allow_redirects=True)
+            response.raise_for_status()
+            content_length = response.headers.get('Content-Length')
+            return int(content_length) if content_length else None
+        except Exception: # Broad exception for fallback
+            return None
 
 MORBOTRON_SEARCH_API_URL = "https://morbotron.com/api/search"
 MORBOTRON_IMAGE_URL_TEMPLATE = "https://morbotron.com/img/{episode}/{timestamp}.jpg"
@@ -124,6 +138,7 @@ def list_morbotron_media(query, limit=25, media_type="image", api_timeout=DEFAUL
 
         image_url = MORBOTRON_IMAGE_URL_TEMPLATE.format(episode=episode, timestamp=timestamp)
         file_extension = ".jpg"
+        size_bytes = get_remote_file_size(image_url, timeout=api_timeout) # Use api_timeout for HEAD request
 
         title = f"Morbotron Screencap - S{episode} T{timestamp}" # Example title
         file_name = f"morbotron_{smart_query_name_base}_{episode}_{timestamp}{file_extension}"
@@ -134,7 +149,8 @@ def list_morbotron_media(query, limit=25, media_type="image", api_timeout=DEFAUL
             "url": image_url,
             "type": "image", # Morbotron is always image
             "filename": file_name,
-            "platform": "morbotron"
+            "platform": "morbotron",
+            "size_bytes": size_bytes
         })
 
     return {"items": found_items, "error": None, "status_message": None if found_items else f"Morbotron: No items extracted for '{query[:50]}'"}
