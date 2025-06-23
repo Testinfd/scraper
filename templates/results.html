@@ -200,6 +200,9 @@
                         <p class="item-details">
                             <span>{{ item.platform.title() }}</span>
                             <span>{{ item.type.title() }}</span>
+                            {% if item.size_bytes is defined %}
+                            <span>{{ item.size_bytes | human_readable_size }}</span>
+                            {% endif %}
                         </p>
                         <p><strong>Filename:</strong> {{ item.filename }}</p>
 

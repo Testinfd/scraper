@@ -26,6 +26,26 @@ from wikimedia_oauth_scraper import list_wikimedia_oauth_media, DEFAULT_DOWNLOAD
 app = Flask(__name__)
 app.secret_key = os.urandom(24) # For session management, flash messages, etc.
 
+# Jinja filter for human-readable file sizes
+def human_readable_size(size_bytes, precision=1):
+    """Converts bytes to a human-readable string (KB, MB, GB)."""
+    if size_bytes is None or not isinstance(size_bytes, (int, float)) or size_bytes < 0:
+        return "N/A"
+    if size_bytes == 0:
+        return "0 B"
+
+    units = ['B', 'KB', 'MB', 'GB', 'TB']
+    power = 0
+    temp_size = float(size_bytes)
+
+    while temp_size >= 1024 and power < len(units) -1 :
+        temp_size /= 1024
+        power += 1
+
+    return f"{temp_size:.{precision}f} {units[power]}"
+
+app.jinja_env.filters['human_readable_size'] = human_readable_size
+
 # Configuration
 # Using a relative path for downloads within the app's instance folder or a dedicated static subfolder
 DOWNLOAD_BASE_DIR = os.path.join(app.instance_path, 'downloads')

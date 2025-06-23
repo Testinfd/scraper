@@ -1,6 +1,6 @@
 import argparse
 import os
-
+import requests # Required for get_remote_file_size
 import time
 
 # Import functions from existing downloader scripts
@@ -16,6 +16,29 @@ from wikimedia_oauth_scraper import search_wikimedia_oauth_media, list_wikimedia
 
 SUPPORTED_PLATFORMS = ["giphy", "morbotron", "wikimedia", "wikimedia_oauth", "pixabay", "frinkiac", "mixkit"]
 
+def get_remote_file_size(url, timeout=5):
+    """
+    Fetches the size of a remote file using a HEAD request.
+    Returns size in bytes, or None if size cannot be determined or an error occurs.
+    """
+    try:
+        response = requests.head(url, timeout=timeout, allow_redirects=True)
+        response.raise_for_status()  # Raise an exception for bad status codes
+        content_length = response.headers.get('Content-Length')
+        if content_length:
+            return int(content_length)
+        else:
+            # print(f"Warning: Content-Length header not found for {url}")
+            return None
+    except requests.exceptions.Timeout:
+        # print(f"Timeout trying to get file size for {url}")
+        return None
+    except requests.exceptions.RequestException as e:
+        # print(f"Error getting file size for {url}: {e}")
+        return None
+    except Exception as e:
+        # print(f"Unexpected error getting file size for {url}: {e}")
+        return None
 
 # Generic download function for interactive mode, using platform-specific downloaders
 def download_selected_item(item, base_output_dir, download_timeout_override=None):

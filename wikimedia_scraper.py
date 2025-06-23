@@ -167,6 +167,7 @@ def list_wikimedia_media(query, list_limit=25, media_type="all", api_timeout=DEF
         img_info = page_data["imageinfo"][0]
         api_media_type = img_info.get("mediatype", "UNKNOWN").lower()
         file_url = img_info.get("url")
+        size_bytes = img_info.get("size") # Get the size in bytes
         original_filename_title = page_data.get("title", f"File_{page_id}")
 
         filename_part = original_filename_title
@@ -219,7 +220,8 @@ def list_wikimedia_media(query, list_limit=25, media_type="all", api_timeout=DEF
             "url": file_url,
             "type": item_actual_media_type,
             "filename": final_filename,
-            "platform": "wikimedia"
+            "platform": "wikimedia",
+            "size_bytes": size_bytes # Add the size
         })
 
     return {"items": found_items, "error": None, "status_message": None if found_items else f"Wikimedia: No items extracted for '{query[:50]}'"}
