@@ -1,0 +1,92 @@
+# render.yaml
+# This file specifies the configuration for deploying the service on Render.
+# See https://render.com/docs/blueprint-spec for more details.
+
+services:
+  - type: web # Specifies a web service
+    name: media-scraper-flask-app # You can change this name
+    env: python # Specifies the environment (Python, Node, etc.)
+    pythonVersion: "3.11" # Specify your desired Python version (e.g., 3.9, 3.10, 3.11)
+    # region: frankfurt # Optional: specify a region, e.g., oregon, frankfurt. Default is Oregon (US West).
+    plan: free # Optional: Render's free instance type. Paid plans offer more resources.
+
+    buildFilter: # Optional: Define paths that trigger a build.
+      paths:
+      - "app.py"
+      - "requirements.txt"
+      - "templates/**"
+      - "*_scraper.py"
+      - "*_downloader.py"
+      - "media_downloader_tool.py"
+      - "render.yaml"
+      ignoredPaths:
+      - "README.md"
+      - ".gitignore"
+      - "test_*" # Ignore test output folders
+
+    # Build command: How to install dependencies.
+    # Using --no-cache-dir can sometimes help with build times or issues in CI environments.
+    buildCommand: "pip install --upgrade pip && pip install -r requirements.txt --no-cache-dir"
+
+    # Start command: How to run the application.
+    # Assumes your Flask app instance is named `app` in `app.py`.
+    # --workers 4: A common starting point for the number of Gunicorn worker processes. Adjust based on your instance type's resources.
+    # --timeout 120: Increases timeout for workers, can be useful if some API calls are slow.
+    # --preload: Preloads the application code before forking worker processes, can save memory.
+    startCommand: "gunicorn app:app --workers 4 --timeout 120 --preload"
+
+    # Environment variables:
+    # IMPORTANT: Set the actual values for these API keys in the Render dashboard under your service's Environment settings.
+    # Do NOT commit your actual API keys to this file or your repository.
+    # The keys listed here are just to inform Render that these env vars are expected by the application.
+    # Render will use these definitions to prompt you in the UI or allow setting them via `envVarGroups`.
+    envVars:
+      - key: PYTHON_VERSION # Ensures Render uses the specified Python version for runtime
+        value: "3.11" # Match pythonVersion above
+      - key: GIPHY_API_KEY
+        # value: "your_actual_giphy_api_key_here" # Set in Render Dashboard
+        sync: false # `sync: false` means Render won't overwrite the value you set in the dashboard with a value from this yaml (if you were to put one).
+      - key: PIXABAY_API_KEY
+        # value: "your_actual_pixabay_api_key_here" # Set in Render Dashboard
+        sync: false
+      - key: WIKIMEDIA_ACCESS_TOKEN # If you use the Wikimedia OAuth scraper
+        # value: "your_actual_wikimedia_access_token_here" # Set in Render Dashboard
+        sync: false
+      # Add any other environment variables your application might need here.
+      # For example, Flask-specific settings:
+      # - key: FLASK_ENV
+      #   value: production # Good practice for production deployments
+      # - key: FLASK_DEBUG
+      #   value: 0 # Ensure debug mode is off in production
+
+    # Optional: Health Check Path
+    # Render uses this to determine if your application has started successfully and is healthy.
+    # The default path is usually '/', which should work for your app's index route.
+    # healthCheckPath: /
+
+    # Optional: Instance type (defaults to 'free' if 'plan: free' is set, or starter/standard etc. for paid)
+    # instanceType: free # or starter / standard / etc. for paid plans. Redundant if plan: free is used.
+
+    # Optional: Auto Deploy
+    # autoDeploy: true # Set to true to automatically deploy on pushes to your connected Git branch (default is true)
+
+    # Disk (for instance storage, e.g. app.instance_path if used for more than just downloads cache)
+    # If you need persistent storage for uploaded files or a database, configure a Render Disk.
+    # The free plan does not include persistent disk storage beyond the ephemeral build/run environment.
+    # The current 'downloads' folder in app.instance_path will be ephemeral.
+    # disks:
+    #   - name: instance-storage
+    #     mountPath: /opt/render/project/instance # Example path, adjust as needed
+    #     sizeGB: 1 # Smallest persistent disk size
+    # If using a disk, you might need to adjust DOWNLOAD_BASE_DIR in app.py to use this mountPath.
+    # For now, this is commented out as the app primarily downloads, and persistence for those isn't explicitly required yet.
+
+# Note on Flask's instance folder:
+# By default, Flask's instance folder is created next to the `app.py` module or in a predefined system location.
+# Render's ephemeral filesystem means anything written here (like the `app.instance_path/downloads`
+# in your current app.py) will be lost on redeploy or restart.
+# If you need those downloads to persist, you'd need to attach a Render Disk and modify app.py
+# to use the disk's mount path for `DOWNLOAD_BASE_DIR`.
+# For a simple media *scraper* and *viewer* where downloads are ad-hoc for the user,
+# ephemeral storage for temporary download serving might be acceptable.
+# If the goal is to build a persistent library of downloaded media *on the server*, a disk is needed.
