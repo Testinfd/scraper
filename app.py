@@ -159,24 +159,25 @@ def search():
     display_items = []
     for res_block in all_results:
         items_from_platform = res_block.get('items', [])
-        # Each platform's result (items_from_platform) might have up to (limit_per_platform * 2) items
-        # We take up to limit_per_platform from these for final display from this specific platform
+        # Each platform's result (items_from_platform) might have up to (limit_per_platform * 2) items fetched.
+        # We take up to 'limit_per_platform' from these for the final display from this specific platform.
         display_items.extend(items_from_platform[:limit_per_platform])
 
     # The existing overall slice limit_per_platform * len(selected_platforms)
-    # can still act as a total cap if desired, though now display_items is built
-    # more equitably. If limit_per_platform=5 and 6 platforms selected,
-    # display_items could have up to 30 items. The slice would be [:30], so it's consistent.
-    # If the goal is strictly "up to X items from each platform, then cap total", this is fine.
-    # If the goal was just "up to X items from each platform, show all of them", then the slice
-    # may not be strictly needed if len(display_items) is already desired_max_items.
-    # Let's keep the slice for now as it defines a clear overall maximum.
+    # can still act as a total cap. If limit_per_platform=5 and 6 platforms selected,
+    # display_items could now have up to 30 items (5 from each). The slice would be [:30],
+    # which is consistent and ensures the total does not exceed this calculated maximum.
+    # This is important if some platforms return fewer than limit_per_platform items,
+    # as it prevents the list from being shorter than this cap if other platforms could fill it,
+    # though the current per-platform limiting already achieves a fair distribution.
+    # For clarity and to ensure each platform gets its items shown (up to limit_per_platform),
+    # this global slice is appropriate.
 
     return render_template('results.html',
                            query=query,
                            results_data=all_results, # Pass the structured data for status messages
                            display_items=display_items[:limit_per_platform * len(selected_platforms)], # Apply overall display limit
-                           limit_per_platform=limit_per_platform, # For reference or other uses in template if any
+                           limit_per_platform=limit_per_platform, # For reference or other uses in template
                            safe_query_name=safe_query_name)
 
 
