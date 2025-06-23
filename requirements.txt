@@ -1,4 +1,5 @@
 Flask>=2.0 # For the web interface
 requests>=2.20 # For making HTTP requests (all downloaders)
 beautifulsoup4>=4.9 # For web scraping (Frinkiac, Mixkit)
+gunicorn # For production web server
 # lxml>=4.5 # Optional: recommended parser for BeautifulSoup, user can install if desired
